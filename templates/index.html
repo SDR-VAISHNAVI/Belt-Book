@@ -51,6 +51,95 @@
       color: var(--text);
     }
 
+    /* ─── LOGIN SCREEN ───────────────────── */
+    #login-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 24px;
+    }
+    #login-screen.active { display: flex; }
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r2);
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .login-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .login-logo-icon {
+      width: 40px; height: 40px;
+      background: var(--red);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 18px rgba(232,25,44,0.4);
+    }
+    .login-logo-text {
+      font-family: 'Oswald', sans-serif;
+      font-size: 26px; font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--white);
+      text-transform: uppercase;
+    }
+    .login-logo-text span { color: var(--red); }
+    .login-label {
+      font-size: 12px; font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .login-input {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 12px 14px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .login-input:focus { border-color: var(--red); }
+    .login-btn {
+      width: 100%;
+      background: var(--red);
+      color: #fff;
+      border: none;
+      border-radius: var(--r);
+      padding: 13px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background .2s;
+    }
+    .login-btn:hover { background: var(--crimson); }
+    .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .login-error {
+      color: var(--red);
+      font-size: 13px;
+      text-align: center;
+      min-height: 18px;
+    }
+
     /* ─── TOPBAR ─────────────────────────── */
     .topbar {
       background: var(--surface);
@@ -942,6 +1031,26 @@
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">🥋</div>
+      <div class="login-logo-text">Belt<span>Book</span></div>
+    </div>
+    <div>
+      <div class="login-label">Username</div>
+      <input class="login-input" id="loginUsername" type="text" autocomplete="username" placeholder="Enter username"/>
+    </div>
+    <div>
+      <div class="login-label">Password</div>
+      <input class="login-input" id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password"/>
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-logo">
@@ -1327,7 +1436,65 @@ const MONTH_NAMES = ['','January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
 
 // ── INIT ────────────────────────────────────────────
-(function init() {
+// ── AUTH ────────────────────────────────────────────
+let currentOwner = null;
+
+function showLoginScreen() {
+  document.getElementById('login-screen').classList.add('active');
+}
+
+function hideLoginScreen() {
+  document.getElementById('login-screen').classList.remove('active');
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  const errEl    = document.getElementById('loginError');
+  const btn      = document.getElementById('loginBtn');
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = 'Enter username and password.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const r = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username, password })
+    });
+    const data = await r.json();
+    if (!r.ok) { errEl.textContent = data.error || 'Login failed.'; return; }
+    currentOwner = data.owner;
+    hideLoginScreen();
+    initApp();
+  } catch(e) {
+    errEl.textContent = 'Could not reach server.';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+document.getElementById('loginPassword').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+async function checkAuth() {
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'include' });
+    if (r.ok) {
+      const data = await r.json();
+      currentOwner = data.owner;
+      hideLoginScreen();
+      initApp();
+    } else {
+      showLoginScreen();
+    }
+  } catch(e) {
+    showLoginScreen();
+  }
+}
+
+function initApp() {
   const now = new Date();
   ['fYear','mwYear'].forEach(id => {
     const el = document.getElementById(id);
@@ -1340,7 +1507,9 @@ const MONTH_NAMES = ['','January','February','March','April','May','June',
   document.getElementById('dateInput').valueAsDate = new Date();
   document.getElementById('rDate').valueAsDate     = new Date();
   loadDojos();
-})();
+}
+
+checkAuth();
 
 // ── PAGE SWITCH ──────────────────────────────────────
 const pageTitles = {
