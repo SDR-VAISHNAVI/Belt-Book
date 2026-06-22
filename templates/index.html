@@ -1,0 +1,2529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>Belt Book</title>
+  <link rel="manifest" href="/static/manifest.json"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png"/>
+<meta name="theme-color" content="#0d0d0d"/>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #161616;
+      --card:      #1c1c1c;
+      --border:    #2a2a2a;
+      --border2:   #333;
+      --red:       #e8192c;
+      --red-dim:   #b01020;
+      --red-glow:  rgba(232,25,44,0.18);
+      --red-soft:  rgba(232,25,44,0.08);
+      --crimson:   #ff3347;
+      --text:      #e8e0d8;
+      --muted:     #5c5c5c;
+      --muted2:    #3a3a3a;
+      --white:     #ffffff;
+      --gold:      #d4a843;
+      --gold-soft: rgba(212,168,67,0.1);
+      --green:     #2ecc71;
+      --green-soft:rgba(46,204,113,0.1);
+      --absent:    #e8192c;
+      --present:   #2ecc71;
+      --r:         10px;
+      --r2:        14px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    /* ─── TOPBAR ─────────────────────────── */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .topbar::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, var(--red) 0%, transparent 55%);
+      opacity: 0.55;
+    }
+    .topbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .topbar-icon {
+      width: 34px;
+      height: 34px;
+      background: var(--red);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+      box-shadow: 0 0 14px rgba(232,25,44,0.4);
+    }
+    .topbar-brand {
+      font-family: 'Oswald', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--white);
+      text-transform: uppercase;
+    }
+    .topbar-brand span { color: var(--red); }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .page-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 15px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .back-btn {
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 4px;
+      letter-spacing: 0.3px;
+    }
+    .back-btn.visible { display: flex; }
+
+    /* ─── SCROLL + BOTTOM NAV ─────────────── */
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: none;
+      padding-bottom: calc(64px + var(--safe-bottom));
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: calc(56px + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 200;
+    }
+    .bottom-nav::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--red) 50%, transparent);
+      opacity: 0.25;
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      transition: color 0.2s;
+      font-family: 'DM Sans', sans-serif;
+      position: relative;
+    }
+    .nav-btn .ni { font-size: 18px; transition: transform 0.2s; }
+    .nav-btn .nl {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      font-family: 'Oswald', sans-serif;
+    }
+    .nav-btn.active { color: var(--red); }
+    .nav-btn.active::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 28px; height: 2px;
+      background: var(--red);
+      border-radius: 0 0 3px 3px;
+    }
+    .nav-btn.active .ni { transform: translateY(-2px); }
+
+    /* ─── PAGES ──────────────────────────── */
+    .page { display: none; padding: 14px; }
+    .page.active { display: block; }
+
+    /* ─── CARD ───────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r2);
+      padding: 15px;
+      margin-bottom: 12px;
+    }
+    .card-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .card-label.red-label { color: var(--red); }
+    .card-label.gold-label { color: var(--gold); }
+    .card-label.green-label { color: var(--green); }
+
+    /* ─── FIELDS ─────────────────────────── */
+    .field { margin-bottom: 11px; }
+    .field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-family: 'Oswald', sans-serif;
+    }
+    select, input[type="date"], input[type="text"], input[type="tel"] {
+      width: 100%;
+      padding: 11px 13px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    select:focus, input:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px var(--red-soft);
+    }
+    select option { background: #1c1c1c; }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.4); }
+    input::placeholder { color: var(--muted); }
+
+    /* ─── BUTTONS ────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: var(--r);
+      font-family: 'Oswald', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+      white-space: nowrap;
+      width: 100%;
+    }
+    .btn:active { transform: scale(0.97); opacity: 0.85; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--red);
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(232,25,44,0.3);
+    }
+    .btn-primary:not(:disabled):hover { box-shadow: 0 4px 24px rgba(232,25,44,0.45); }
+
+    .btn-success {
+      background: var(--green);
+      color: #0d0d0d;
+      box-shadow: 0 4px 14px rgba(46,204,113,0.25);
+    }
+    .btn-danger {
+      background: var(--red-soft);
+      color: var(--crimson);
+      border: 1px solid rgba(232,25,44,0.25);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border2);
+    }
+    .btn-gold {
+      background: var(--gold-soft);
+      color: var(--gold);
+      border: 1px solid rgba(212,168,67,0.3);
+    }
+    .btn-whatsapp {
+      background: #1a6b3a;
+      color: #fff;
+      border: 1px solid #25d366;
+    }
+    .btn-sm {
+      padding: 7px 13px;
+      font-size: 11px;
+      width: auto;
+      letter-spacing: 1px;
+    }
+
+    /* ─── NOTIFY TOGGLE ──────────────────── */
+    .notify-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 11px 14px;
+      transition: opacity 0.2s, border-color 0.2s;
+    }
+    .notify-row.off { opacity: 0.42; }
+    .notify-row-info { flex: 1; min-width: 0; }
+    .notify-row-name { font-family: 'Oswald', sans-serif; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--white); }
+    .notify-row-phone { font-size: 11px; color: #6dcc96; margin-top: 1px; }
+    .notify-row-nophone { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 1px; }
+    .wa-toggle { position: relative; width: 38px; height: 22px; flex-shrink: 0; cursor: pointer; }
+    .wa-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .wa-toggle-track {
+      position: absolute; inset: 0;
+      background: var(--border2);
+      border-radius: 11px;
+      transition: background 0.2s;
+    }
+    .wa-toggle input:checked ~ .wa-toggle-track { background: #25d366; }
+    .wa-toggle-thumb {
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 16px; height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      pointer-events: none;
+    }
+    .wa-toggle input:checked ~ .wa-toggle-thumb { transform: translateX(16px); }
+
+    /* ─── STATS ROW ──────────────────────── */
+    .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+    .stats-row.cols3 { grid-template-columns: repeat(3, 1fr); }
+    .stats-row.cols4 { grid-template-columns: repeat(4, 1fr); }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r2);
+      padding: 13px 12px;
+    }
+    .stat-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 9px;
+      font-weight: 400;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .stat-value {
+      font-family: 'Oswald', sans-serif;
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--white);
+      margin-top: 4px;
+      line-height: 1;
+    }
+    .stat-value.red    { color: var(--red); }
+    .stat-value.gold   { color: var(--gold); }
+    .stat-value.green  { color: var(--green); }
+    .stat-value.muted  { color: var(--text); }
+
+    /* ─── PROGRESS ───────────────────────── */
+    .progress-wrap { margin-bottom: 12px; }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .progress-track {
+      background: var(--border);
+      border-radius: 20px;
+      height: 5px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 20px;
+      background: linear-gradient(90deg, var(--green), #27ae60);
+      transition: width 0.6s ease;
+    }
+
+    /* ─── TABLE ──────────────────────────── */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead th {
+      padding: 8px 10px;
+      font-family: 'Oswald', sans-serif;
+      font-size: 9px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 400;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid rgba(42,42,42,0.5); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody td { padding: 10px; vertical-align: middle; }
+    .num-cell { color: var(--muted); font-size: 11px; font-weight: 600; width: 28px; font-variant-numeric: tabular-nums; }
+    .s-name { font-weight: 600; color: var(--white); font-size: 14px; }
+
+    /* ─── BELT BADGES ────────────────────── */
+    .belt-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: capitalize;
+      white-space: nowrap;
+      font-family: 'Oswald', sans-serif;
+      letter-spacing: 0.8px;
+    }
+    .belt-white   { background: rgba(255,255,255,0.07); color: #ccc; }
+    .belt-yellow  { background: rgba(255,215,0,0.1);   color: #f0c040; }
+    .belt-orange  { background: rgba(255,140,0,0.1);   color: #f08030; }
+    .belt-green   { background: rgba(46,204,113,0.1);  color: #2ecc71; }
+    .belt-blue    { background: rgba(52,152,219,0.1);  color: #5ba8e0; }
+    .belt-purple  { background: rgba(155,89,182,0.1);  color: #b07ad4; }
+    .belt-brown   { background: rgba(139,90,43,0.15);  color: #c0804a; }
+    .belt-black   { background: rgba(255,255,255,0.04); color: #888; border: 1px solid #333; }
+
+    /* ─── ATTENDANCE BUTTONS ─────────────── */
+    .att-btns { display: flex; gap: 6px; }
+    .att-btn {
+      width: 36px; height: 36px;
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+    }
+    .btn-present { color: var(--green); border-color: rgba(46,204,113,0.25); }
+    .btn-present.active { background: var(--green); color: #0d0d0d; border-color: var(--green); box-shadow: 0 0 10px rgba(46,204,113,0.3); }
+    .btn-absent  { color: var(--red);   border-color: rgba(232,25,44,0.25); }
+    .btn-absent.active  { background: var(--red);   color: #fff; border-color: var(--red); box-shadow: 0 0 10px rgba(232,25,44,0.3); }
+
+    /* ─── STATUS PILLS ───────────────────── */
+    .status-pill {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      white-space: nowrap;
+    }
+    .status-present { background: var(--green-soft); color: var(--green); }
+    .status-absent  { background: var(--red-soft);   color: var(--red); }
+    .status-pending { background: rgba(255,255,255,0.04); color: var(--muted); }
+
+    /* ─── FEE TOGGLE ─────────────────────── */
+    .fee-toggle {
+      display: flex;
+      border-radius: 7px;
+      overflow: hidden;
+      border: 1px solid var(--border2);
+      min-width: 130px;
+    }
+    .fee-toggle-btn {
+      flex: 1;
+      padding: 7px 5px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      transition: all 0.15s;
+      background: transparent;
+      color: var(--muted);
+    }
+    .fee-toggle-btn.paid   { color: var(--green); }
+    .fee-toggle-btn.unpaid { color: var(--red); }
+    .fee-toggle-btn.active.paid   { background: var(--green-soft); }
+    .fee-toggle-btn.active.unpaid { background: var(--red-soft); }
+
+    /* ─── PILLS / TABS ───────────────────── */
+    .tab-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .rpill {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .rpill.active           { background: var(--red-soft); border-color: rgba(232,25,44,0.4); color: var(--red); }
+    .rpill[data-f="present"].active, .rpill.green-pill.active { background: var(--green-soft); border-color: rgba(46,204,113,0.4); color: var(--green); }
+    .rpill[data-f="absent"].active, .rpill.red-pill.active    { background: var(--red-soft); border-color: rgba(232,25,44,0.4); color: var(--red); }
+
+    /* ─── SEARCH ─────────────────────────── */
+    .search-wrap { position: relative; margin-bottom: 10px; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+    .search-wrap input { padding-left: 36px; }
+
+    /* ─── ACTION BAR ─────────────────────── */
+    .action-bar {
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 12px;
+    }
+    .summary {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    .summary b { color: var(--text); }
+
+    /* ─── PLACEHOLDER ────────────────────── */
+    .placeholder {
+      text-align: center;
+      padding: 30px 16px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 400;
+    }
+    .placeholder span { display: block; font-size: 32px; margin-bottom: 10px; }
+
+    /* ─── SPINNER ────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── PERFECT / BELT TEST ────────────── */
+    .perfect-card {
+      background: rgba(212,168,67,0.04);
+      border: 1px solid rgba(212,168,67,0.15);
+      border-radius: var(--r2);
+      padding: 14px;
+      margin-top: 10px;
+    }
+    .perfect-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(212,168,67,0.07);
+    }
+    .perfect-row:last-child { border-bottom: none; }
+    .perfect-num  { font-size: 11px; font-weight: 600; color: var(--muted); width: 22px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .perfect-name { font-weight: 600; color: var(--white); flex: 1; font-size: 14px; }
+
+    /* Belt test rows */
+    .bt-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(42,42,42,0.5);
+    }
+    .bt-row:last-child { border-bottom: none; }
+    .bt-check {
+      width: 22px; height: 22px;
+      border-radius: 5px;
+      border: 1.5px solid var(--border2);
+      background: var(--bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+      font-size: 11px;
+    }
+    .bt-check.ineligible { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+    .bt-info { flex: 1; min-width: 0; }
+    .bt-arrow { font-size: 11px; color: var(--muted); white-space: nowrap; font-family: 'Oswald', sans-serif; letter-spacing: 0.5px; }
+    .bt-arrow.promoted { color: var(--green); }
+    .bt-arrow.skipped  { color: var(--red); }
+
+    /* ─── STUDENT PROFILE ────────────────── */
+    .profile-hero {
+      background: linear-gradient(135deg, rgba(232,25,44,0.07), rgba(25,25,25,0.9));
+      border: 1px solid rgba(232,25,44,0.2);
+      border-radius: var(--r2);
+      padding: 18px;
+      margin-bottom: 12px;
+    }
+    .profile-avatar {
+      width: 50px; height: 50px;
+      border-radius: 12px;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 10px;
+      box-shadow: 0 0 18px rgba(232,25,44,0.35);
+    }
+    .profile-name {
+      font-family: 'Oswald', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--white);
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    .profile-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+    .profile-phone { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+    /* Circular progress */
+    .circ-prog { position: relative; width: 76px; height: 76px; flex-shrink: 0; }
+    .circ-prog svg { transform: rotate(-90deg); }
+    .circ-prog .track { fill: none; stroke: var(--border2); stroke-width: 5; }
+    .circ-prog .fill  { fill: none; stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease; }
+    .circ-prog .fill.green { stroke: var(--green); }
+    .circ-prog .fill.red   { stroke: var(--red); }
+    .circ-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+    .circ-label .pct  { font-family: 'Oswald', sans-serif; font-size: 15px; color: #fff; line-height: 1; }
+    .circ-label .sub  { font-family: 'Oswald', sans-serif; font-size: 8px; color: var(--muted); letter-spacing: 1px; margin-top: 1px; }
+
+    /* Attendance history */
+    .att-month-block { margin-bottom: 14px; }
+    .att-month-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .att-dots { display: flex; flex-wrap: wrap; gap: 5px; }
+    .att-dot {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: default;
+      font-variant-numeric: tabular-nums;
+    }
+    .att-dot.present { background: var(--green-soft); color: var(--green); border: 1px solid rgba(46,204,113,0.25); }
+    .att-dot.absent  { background: var(--red-soft);   color: var(--red);   border: 1px solid rgba(232,25,44,0.25); }
+
+    /* Fee history */
+    .fee-month-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(42,42,42,0.5);
+    }
+    .fee-month-row:last-child { border-bottom: none; }
+    .fee-month-name { font-weight: 600; color: var(--text); font-size: 14px; }
+    .fee-month-year { font-size: 11px; color: var(--muted); font-weight: 400; }
+
+    /* Clickable student row */
+    .s-row-clickable { cursor: pointer; transition: background 0.12s; }
+    .s-row-clickable:active { background: rgba(232,25,44,0.04); }
+
+    /* ─── DEDICATION LEADERBOARD ─────────── */
+    .dedication-card {
+      background: rgba(212,168,67,0.04);
+      border: 1px solid rgba(212,168,67,0.18);
+      border-radius: var(--r2);
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .ded-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(42,42,42,0.4);
+    }
+    .ded-row:last-child { border-bottom: none; }
+    .ded-rank {
+      font-family: 'Oswald', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      width: 26px;
+      flex-shrink: 0;
+    }
+    .ded-rank.gold   { color: var(--gold); }
+    .ded-rank.silver { color: #a0a8b0; }
+    .ded-rank.bronze { color: #b07a50; }
+    .ded-rank.other  { color: var(--muted); font-size: 12px; }
+    .ded-info { flex: 1; min-width: 0; }
+    .ded-name { font-weight: 600; color: #fff; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ded-sub  { font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+    .ded-badge { text-align: right; flex-shrink: 0; }
+    .ded-att  { font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 700; line-height: 1; }
+    .ded-att.good { color: var(--green); }
+    .ded-att.warn { color: var(--gold); }
+    .ded-att.bad  { color: var(--red); }
+    .ded-att-sub  { font-size: 9px; color: var(--muted); font-family: 'Oswald', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+
+    /* ─── SECTION HEADERS IN GROUPS ─────── */
+    .batch-hdr {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--red);
+      padding: 8px 0 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .bt-batch-hdr {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--red);
+      padding: 8px 0 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4px;
+    }
+
+    /* ─── MODAL ──────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 500;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border2);
+      border-top: 2px solid var(--red);
+      border-radius: 16px 16px 0 0;
+      padding: 20px;
+      width: 100%;
+      max-height: 92vh;
+      overflow-y: auto;
+      animation: slideUp 0.22s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .modal-handle {
+      width: 36px; height: 3px;
+      background: var(--border2);
+      border-radius: 2px;
+      margin: 0 auto 18px;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .modal-header h3 {
+      font-family: 'Oswald', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+    }
+    .modal-footer { display: flex; gap: 10px; margin-top: 18px; }
+    .modal-footer .btn { flex: 1; }
+
+    /* ─── WHATSAPP BOX ───────────────────── */
+    .wa-box {
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      padding: 14px;
+      font-size: 13px;
+      line-height: 1.9;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 12px;
+      font-family: monospace;
+    }
+
+    /* ─── ABSENCE ALERT BOX ──────────────── */
+    .absence-alert {
+      background: linear-gradient(135deg, rgba(232,25,44,0.12), rgba(232,25,44,0.05));
+      border: 1px solid rgba(232,25,44,0.3);
+      border-radius: var(--r2);
+      padding: 14px;
+      margin-top: 12px;
+    }
+    .absence-alert-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .absence-alert-icon {
+      width: 32px; height: 32px;
+      background: var(--red);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .absence-alert-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--red);
+      font-weight: 500;
+    }
+    .absence-alert-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .absence-student-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(232,25,44,0.1);
+    }
+    .absence-student-row:last-child { border-bottom: none; }
+
+    /* ─── TOAST ──────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: calc(64px + var(--safe-bottom) + 10px);
+      left: 14px; right: 14px;
+      padding: 11px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.28s;
+      z-index: 9999;
+      pointer-events: none;
+      text-align: center;
+      font-family: 'DM Sans', sans-serif;
+    }
+    #toast.show  { opacity: 1; transform: translateY(0); }
+    #toast.success { background: var(--green); color: #0d0d0d; }
+    #toast.error   { background: var(--red);   color: #fff; }
+    #toast.info    { background: #2a2a2a; color: var(--text); border: 1px solid var(--border2); }
+
+    /* ─── SCROLLBAR ──────────────────────── */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    /* ─── WA SEND STATUS ─────────────────── */
+    .wa-status-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      background: rgba(46,204,113,0.08);
+      border: 1px solid rgba(46,204,113,0.2);
+      font-size: 11px;
+      color: var(--green);
+      font-weight: 500;
+    }
+    .wa-status-row.error {
+      background: var(--red-soft);
+      border-color: rgba(232,25,44,0.25);
+      color: var(--red);
+    }
+
+    body { display: flex; flex-direction: column; }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="topbar-icon">🥋</div>
+    <div class="topbar-brand">Belt<span>Book</span></div>
+  </div>
+  <div class="topbar-right">
+    <button class="back-btn" id="backBtn" onclick="goBack()">← Back</button>
+    <div class="page-label" id="topPageLabel">Attendance</div>
+  </div>
+</div>
+
+<div class="scroll-area" id="scrollArea">
+
+  <!-- ══ ATTENDANCE ══════════════════════ -->
+  <div class="page active" id="page-attendance">
+    <div class="card">
+      <div class="card-label">Session Setup</div>
+      <div class="field"><label>Dojo</label><select id="dojoSelect"></select></div>
+      <div class="field"><label>Batch</label><select id="batchSelect" disabled><option>— Select Dojo First —</option></select></div>
+      <div class="field"><label>Date</label><input type="date" id="dateInput"/></div>
+      <button class="btn btn-primary" id="loadBtn" onclick="loadAttStudents()" disabled style="margin-top:4px;">Load Roster</button>
+    </div>
+    <div class="card">
+      <div class="card-label">Roster</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Student</th><th>Mark</th><th>Status</th></tr></thead>
+          <tbody id="attTable"><tr><td colspan="4"><div class="placeholder"><span>🗂️</span>Select a batch to load</div></td></tr></tbody>
+        </table>
+      </div>
+      <div class="action-bar" id="attActionBar" style="display:none;">
+        <div class="summary">
+          <b id="summaryTotal">0</b> students ·
+          <span style="color:var(--green)"><b id="summaryPresent">0</b> present</span> ·
+          <span style="color:var(--red)"><b id="summaryAbsent">0</b> absent</span>
+        </div>
+        <button class="btn btn-success" id="submitBtn" onclick="submitAll()">Save Attendance</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STUDENTS ════════════════════════ -->
+  <div class="page" id="page-students">
+    <div id="students-list-view">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total Students</div><div class="stat-value muted" id="statTotal">—</div></div>
+        <div class="stat-card"><div class="stat-label">Black Belts</div><div class="stat-value gold" id="statBlack">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Filter</div>
+        <div class="field"><label>Dojo</label><select id="sDojo"></select></div>
+        <div class="field"><label>Batch</label><select id="sBatch" onchange="filterStudents()"><option value="">All Batches</option></select></div>
+        <div class="field">
+          <label>Belt</label>
+          <select id="sBelt" onchange="filterStudents()">
+            <option value="">All Belts</option>
+            <option>White</option><option>Yellow</option><option>Orange</option>
+            <option>Green</option><option>Blue</option>
+            <option>Purple 1</option><option>Purple 2</option>
+            <option>Brown 1</option><option>Brown 2</option><option>Black</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="sSearch" placeholder="Search by name…" oninput="filterStudents()"/>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;">
+          <div style="font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);" id="studentCount"></div>
+          <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Add Student</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Student</th><th>Actions</th></tr></thead>
+            <tbody id="sTable"><tr><td colspan="3"><div class="placeholder"><span>👤</span>Select a dojo</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="student-profile-view" style="display:none;"></div>
+  </div>
+
+  <!-- ══ REPORTS ══════════════════════════ -->
+  <div class="page" id="page-reports">
+    <div class="tab-row">
+      <button class="rpill active" id="rtab-daily"   onclick="switchReportTab('daily')">Daily</button>
+      <button class="rpill"        id="rtab-monthly" onclick="switchReportTab('monthly')">Monthly Stars</button>
+    </div>
+
+    <!-- DAILY -->
+    <div id="r-daily">
+      <div class="card">
+        <div class="card-label">Daily Attendance</div>
+        <div class="field"><label>Dojo</label><select id="rDojo"></select></div>
+        <div class="field"><label>Batch</label><select id="rBatch"><option value="">— Select Batch —</option></select></div>
+        <div class="field"><label>Date</label><input type="date" id="rDate"/></div>
+        <button class="btn btn-primary" onclick="loadReport()" style="margin-top:4px;">Generate Report</button>
+      </div>
+      <div id="rStatsArea" style="display:none;">
+        <div class="stats-row cols3">
+          <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value muted" id="rTotal">0</div></div>
+          <div class="stat-card"><div class="stat-label">Present</div><div class="stat-value green" id="rPresent">0</div></div>
+          <div class="stat-card"><div class="stat-label">Absent</div><div class="stat-value red" id="rAbsent">0</div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-meta"><span>Attendance Rate</span><span id="rProgressLabel"></span></div>
+          <div class="progress-track"><div class="progress-fill" id="rProgressBar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="card" id="rTableCard" style="display:none;">
+        <div class="card-label">Records</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="rpill active" data-f="all"     onclick="setRFilter('all',this)">All</button>
+          <button class="rpill"        data-f="present" onclick="setRFilter('present',this)">Present</button>
+          <button class="rpill"        data-f="absent"  onclick="setRFilter('absent',this)">Absent</button>
+          <button class="rpill"        data-f="none"    onclick="setRFilter('none',this)">Not Marked</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase;" id="rTableCount"></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>Student</th><th>Status</th></tr></thead>
+          <tbody id="rTable"></tbody>
+        </table></div>
+      </div>
+      <div id="rPlaceholder"><div class="card"><div class="placeholder"><span>📋</span>Select dojo, batch and date</div></div></div>
+    </div>
+
+    <!-- MONTHLY -->
+    <div id="r-monthly" style="display:none;">
+      <div class="card">
+        <div class="card-label">Zero Absences — Monthly</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Shows students with <b style="color:var(--text)">no absences</b> this month. Students with no records are excluded.</p>
+        <div class="field"><label>Dojo</label><select id="mwDojo"><option value="all">All Dojos</option></select></div>
+        <div class="field"><label>Batch (optional)</label><select id="mwBatch"><option value="">All Batches</option></select></div>
+        <div class="field">
+          <label>Month</label>
+          <select id="mwMonth">
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+        </div>
+        <div class="field"><label>Year</label><select id="mwYear"></select></div>
+        <button class="btn btn-primary" id="mwFindBtn" onclick="loadNoAbsences()">Find Zero Absence Students</button>
+      </div>
+      <div id="mwResults" style="display:none;">
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-label">Total Students</div><div class="stat-value muted" id="mwTotal">0</div></div>
+          <div class="stat-card"><div class="stat-label">Zero Absences</div><div class="stat-value gold" id="mwPerfect">0</div></div>
+        </div>
+        <div class="perfect-card">
+          <div class="card-label gold-label">Never Absent This Month</div>
+          <div id="mwPerfectList"></div>
+        </div>
+        <div id="mwAbsentCard" style="display:none;margin-top:10px;">
+          <div class="card" style="border-color:rgba(232,25,44,0.2);">
+            <div class="card-label red-label">Had At Least One Absence</div>
+            <div id="mwAbsentList"></div>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-whatsapp" onclick="generateMonthlyWhatsApp()">📲 Share on WhatsApp</button>
+        </div>
+      </div>
+      <div id="mwPlaceholder">
+        <div class="card"><div class="placeholder"><span>⭐</span>Select dojo &amp; month, then tap Find</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FEES ════════════════════════════ -->
+  <div class="page" id="page-fees">
+    <div class="card">
+      <div class="card-label">Select Period</div>
+      <div class="field"><label>Dojo</label><select id="fDojo"></select></div>
+      <div class="field">
+        <label>Month</label>
+        <select id="fMonth">
+          <option value="1">January</option><option value="2">February</option>
+          <option value="3">March</option><option value="4">April</option>
+          <option value="5">May</option><option value="6">June</option>
+          <option value="7">July</option><option value="8">August</option>
+          <option value="9">September</option><option value="10">October</option>
+          <option value="11">November</option><option value="12">December</option>
+        </select>
+      </div>
+      <div class="field"><label>Year</label><select id="fYear"></select></div>
+      <button class="btn btn-primary" onclick="loadFees()" style="margin-top:4px;">Load Fee Status</button>
+    </div>
+    <div class="stats-row" id="fStatsRow" style="display:none;">
+      <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value muted" id="fTotal">0</div></div>
+      <div class="stat-card"><div class="stat-label">Paid</div><div class="stat-value green" id="fPaid">0</div></div>
+      <div class="stat-card"><div class="stat-label">Unpaid</div><div class="stat-value red" id="fUnpaid">0</div></div>
+      <div class="stat-card"><div class="stat-label">Rate</div><div class="stat-value gold" id="fPercent">—</div></div>
+    </div>
+    <div id="fTableCard" style="display:none;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <button class="rpill active" id="frPill-all"    onclick="setFeeFilter('all',this)">All</button>
+        <button class="rpill green-pill" id="frPill-paid"   onclick="setFeeFilter('paid',this)">Paid</button>
+        <button class="rpill red-pill"   id="frPill-unpaid" onclick="setFeeFilter('unpaid',this)">Unpaid</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button class="btn btn-sm" style="background:var(--green-soft);color:var(--green);border:1px solid rgba(46,204,113,0.3);flex:1;font-family:'Oswald',sans-serif;letter-spacing:1px;" onclick="markAllFees('paid')">Mark All Paid</button>
+        <button class="btn btn-sm" style="background:var(--red-soft);color:var(--red);border:1px solid rgba(232,25,44,0.3);flex:1;font-family:'Oswald',sans-serif;letter-spacing:1px;" onclick="markAllFees('unpaid')">Mark All Unpaid</button>
+      </div>
+      <div id="fBatchGroups"></div>
+      <div style="margin-top:10px;">
+        <button class="btn btn-whatsapp" onclick="generateFeeWhatsApp()">📲 Share Fee Report</button>
+      </div>
+    </div>
+    <div id="fPlaceholder">
+      <div class="card"><div class="placeholder"><span>💰</span>Select dojo and month to view fees</div></div>
+    </div>
+  </div>
+
+  <!-- ══ BELT TEST ════════════════════════ -->
+  <div class="page" id="page-belt-test">
+    <div class="card">
+      <div class="card-label">Belt Test Setup</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">All students eligible by default. <b style="color:var(--red);">Tap a student to mark ineligible</b> — they stay at current belt.</p>
+      <div class="field"><label>Dojo</label><select id="btDojo"></select></div>
+      <div class="field"><label>Batch (optional)</label><select id="btBatch"><option value="">All Batches</option></select></div>
+      <button class="btn btn-primary" onclick="loadBeltTest()" style="margin-top:4px;">Load Students</button>
+    </div>
+
+    <div id="btContent" style="display:none;">
+      <div class="dedication-card" id="btDedicationCard">
+        <div class="card-label gold-label">Most Dedicated — Fewest Absences</div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:10px;">Ranked by fewest absences since records began.</p>
+        <div id="btDedicationList"></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value muted" id="btTotal">0</div></div>
+        <div class="stat-card"><div class="stat-label">Ineligible</div><div class="stat-value red" id="btIneligible">0</div></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Select Ineligible Students</div>
+        <div id="btList"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="btSelectNone()">Clear All</button>
+        <button class="btn btn-danger btn-sm" onclick="btSelectAll()">Mark All Ineligible</button>
+      </div>
+      <button class="btn btn-success" onclick="confirmBeltTest()">🥋 Promote Eligible Students</button>
+    </div>
+
+    <div id="btPlaceholder">
+      <div class="card"><div class="placeholder"><span>🥋</span>Select dojo and load students to begin</div></div>
+    </div>
+
+    <div id="btResults" style="display:none;margin-top:12px;">
+      <div class="card">
+        <div class="card-label green-label">Promotion Complete</div>
+        <div id="btResultList"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /scroll-area -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="switchPage('attendance',this)"><span class="ni">📋</span><span class="nl">Attend</span></button>
+  <button class="nav-btn"        onclick="switchPage('students',this)"><span class="ni">👤</span><span class="nl">Students</span></button>
+  <button class="nav-btn"        onclick="switchPage('reports',this)"><span class="ni">📊</span><span class="nl">Reports</span></button>
+  <button class="nav-btn"        onclick="switchPage('fees',this)"><span class="ni">💰</span><span class="nl">Fees</span></button>
+  <button class="nav-btn"        onclick="switchPage('belt-test',this)"><span class="ni">🥋</span><span class="nl">Belt Test</span></button>
+</div>
+
+<!-- ADD/EDIT STUDENT MODAL -->
+<div class="modal-overlay" id="studentModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3 id="modalTitle">Add Student</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="field"><label>Full Name</label><input type="text" id="mName" placeholder="e.g. Arjun Kumar"/></div>
+    <div class="field"><label>Parent Phone Number</label><input type="tel" id="mPhone" placeholder="e.g. +919876543210"/></div>
+    <div class="field"><label>Dojo</label><select id="mDojo" onchange="loadModalBatches()"></select></div>
+    <div class="field"><label>Batch</label><select id="mBatch"></select></div>
+    <div class="field">
+      <label>Belt Level</label>
+      <select id="mBelt">
+        <option>White</option><option>Yellow</option><option>Orange</option>
+        <option>Green</option><option>Blue</option>
+        <option>Purple 1</option><option>Purple 2</option>
+        <option>Brown 1</option><option>Brown 2</option><option>Black</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-success" id="modalSaveBtn" onclick="saveStudent()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM BELT TEST MODAL -->
+<div class="modal-overlay" id="btConfirmModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><h3>Confirm Promotion</h3><button class="modal-close" onclick="closeBtModal()">✕</button></div>
+    <div id="btConfirmText" style="font-size:13px;color:var(--muted);line-height:1.75;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeBtModal()">Cancel</button>
+      <button class="btn btn-success" id="btDoPromote" onclick="executeBeltTest()">Confirm & Promote</button>
+    </div>
+  </div>
+</div>
+
+<!-- WHATSAPP MODAL -->
+<div class="modal-overlay" id="waModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3>WhatsApp Message</h3>
+      <button class="modal-close" onclick="closeWaModal()">✕</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);">Copy and paste into WhatsApp:</p>
+    <div class="wa-box" id="waMessageBox"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeWaModal()">Close</button>
+      <button class="btn btn-whatsapp" onclick="copyWaMessage()">📋 Copy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ABSENCE ALERTS MODAL -->
+<div class="modal-overlay" id="absenceModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h3>Absence Alerts</h3>
+      <button class="modal-close" onclick="closeAbsenceModal()">✕</button>
+    </div>
+    <div class="absence-alert">
+      <div class="absence-alert-header">
+        <div class="absence-alert-icon">📵</div>
+        <div>
+          <div class="absence-alert-title">Parents to Notify</div>
+          <div class="absence-alert-sub" id="absenceAlertSub">Attendance saved successfully</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.6;">
+      Toggle off any students you don't want to notify, then tap <b style="color:var(--white);">Send Notifications</b>. Messages are sent in the background via WhatsApp.
+    </p>
+    <div id="absenceWaButtons" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;"></div>
+    <div id="absenceSendStatus" style="display:none;margin-top:10px;font-size:12px;text-align:center;font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAbsenceModal()">Close</button>
+      <button class="btn btn-whatsapp" id="absenceSendBtn" onclick="sendAbsenceNotifications()">📲 Send Notifications</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '';
+const attendance  = {};
+let allStudents   = [];
+let editingId     = null;
+let feeData       = [];
+let fMonth_cur    = 1;
+let fYear_cur     = new Date().getFullYear();
+let mwNoAbsData   = [];
+let mwHadAbsData  = [];
+let mwTotalCount  = 0;
+let cachedDojos   = [];
+let currentFeeFilter = 'all';
+let btStudents    = [];
+let btIneligibleIds = new Set();
+let currentPage   = 'attendance';
+let profileHistory = [];
+
+const BELT_ORDER  = ['White','Yellow','Orange','Green','Blue','Purple 1','Purple 2','Brown 1','Brown 2','Black'];
+const MONTH_NAMES = ['','January','February','March','April','May','June',
+                     'July','August','September','October','November','December'];
+
+// ── INIT ────────────────────────────────────────────
+(function init() {
+  const now = new Date();
+  ['fYear','mwYear'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    for (let y = now.getFullYear(); y >= now.getFullYear() - 3; y--)
+      el.innerHTML += `<option value="${y}">${y}</option>`;
+  });
+  document.getElementById('fMonth').value  = now.getMonth() + 1;
+  document.getElementById('mwMonth').value = now.getMonth() + 1;
+  document.getElementById('dateInput').valueAsDate = new Date();
+  document.getElementById('rDate').valueAsDate     = new Date();
+  loadDojos();
+})();
+
+// ── PAGE SWITCH ──────────────────────────────────────
+const pageTitles = {
+  attendance:'Attendance', students:'Students',
+  reports:'Reports', fees:'Fees', 'belt-test':'Belt Test'
+};
+
+function switchPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  el.classList.add('active');
+  currentPage = name;
+  document.getElementById('topPageLabel').textContent = pageTitles[name] || name;
+  document.getElementById('scrollArea').scrollTop = 0;
+  profileHistory = [];
+  document.getElementById('backBtn').classList.remove('visible');
+  if (name === 'students')  { showStudentsList(); initStudentsPage(); }
+  if (name === 'fees')      initFeesPage();
+  if (name === 'reports')   initReportsPage();
+  if (name === 'belt-test') initBeltTestPage();
+}
+
+function goBack() {
+  if (profileHistory.length > 0) {
+    profileHistory.pop();
+    if (profileHistory.length === 0) showStudentsList();
+  }
+}
+
+function showStudentsList() {
+  document.getElementById('students-list-view').style.display = '';
+  document.getElementById('student-profile-view').style.display = 'none';
+  document.getElementById('topPageLabel').textContent = 'Students';
+  document.getElementById('backBtn').classList.remove('visible');
+  document.getElementById('scrollArea').scrollTop = 0;
+}
+
+function switchReportTab(tab) {
+  document.getElementById('r-daily').style.display   = tab === 'daily'   ? '' : 'none';
+  document.getElementById('r-monthly').style.display = tab === 'monthly' ? '' : 'none';
+  document.getElementById('rtab-daily').classList.toggle('active',   tab === 'daily');
+  document.getElementById('rtab-monthly').classList.toggle('active', tab === 'monthly');
+}
+
+// ── HELPERS ─────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const r = await fetch(API + path, opts);
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || `HTTP ${r.status}`); }
+  return r.json();
+}
+
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `show ${type}`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ''; }, 3000);
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function beltClass(belt) {
+  const b = (belt || '').toLowerCase().split(' ')[0];
+  return { white:'belt-white', yellow:'belt-yellow', orange:'belt-orange',
+           green:'belt-green', blue:'belt-blue', purple:'belt-purple',
+           brown:'belt-brown', black:'belt-black' }[b] || 'belt-white';
+}
+
+function nextBeltLabel(belt) {
+  const clean = (belt||'').replace(/ belt$/i,'').trim();
+  const idx = BELT_ORDER.findIndex(b => b.toLowerCase() === clean.toLowerCase());
+  if (idx === -1 || idx === BELT_ORDER.length - 1) return belt;
+  return BELT_ORDER[idx + 1];
+}
+
+function populateDojo(id, placeholder) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  sel.innerHTML = placeholder ? `<option value="">${placeholder}</option>` : '';
+  cachedDojos.forEach(d => sel.innerHTML += `<option value="${d.id}">${esc(d.name)}</option>`);
+}
+
+// ── DOJOS ────────────────────────────────────────────
+async function loadDojos() {
+  try {
+    cachedDojos = await apiFetch('/api/dojos');
+    ['dojoSelect','sDojo','rDojo','fDojo','btDojo'].forEach(id => populateDojo(id, '— Select Dojo —'));
+    populateDojo('mDojo', null);
+    const mwSel = document.getElementById('mwDojo');
+    mwSel.innerHTML = '<option value="all">All Dojos</option>';
+    cachedDojos.forEach(d => mwSel.innerHTML += `<option value="${d.id}">${esc(d.name)}</option>`);
+    mwSel.onchange = onMwDojoChange;
+    document.getElementById('dojoSelect').onchange = onDojoChange;
+    document.getElementById('sDojo').onchange      = onSDojoChange;
+    document.getElementById('rDojo').onchange      = onRDojoChange;
+    document.getElementById('fDojo').onchange      = onFDojoChange;
+    document.getElementById('btDojo').onchange     = onBtDojoChange;
+    if (cachedDojos.length) loadModalBatches();
+  } catch (e) { toast('Could not connect to server', 'error'); }
+}
+
+// ── ATTENDANCE ───────────────────────────────────────
+async function onDojoChange() {
+  const dojoId   = document.getElementById('dojoSelect').value;
+  const batchSel = document.getElementById('batchSelect');
+  const loadBtn  = document.getElementById('loadBtn');
+  batchSel.innerHTML = '<option value="">— Select Batch —</option>';
+  batchSel.disabled = true; loadBtn.disabled = true;
+  if (!dojoId) return;
+  try {
+    const batches = await apiFetch('/api/batches?dojo_id=' + dojoId);
+    batches.forEach(b => batchSel.innerHTML += `<option value="${b.id}">${esc(b.name)}</option>`);
+    batchSel.disabled = false;
+    batchSel.onchange = () => { loadBtn.disabled = !batchSel.value; };
+  } catch (e) { toast('Failed to load batches', 'error'); }
+}
+
+async function loadAttStudents() {
+  const batchId = document.getElementById('batchSelect').value;
+  if (!batchId) return;
+  const tbody = document.getElementById('attTable');
+  tbody.innerHTML = `<tr><td colspan="4"><div class="placeholder"><span class="spinner"></span>Loading…</div></td></tr>`;
+  document.getElementById('attActionBar').style.display = 'none';
+  Object.keys(attendance).forEach(k => delete attendance[k]);
+  try {
+    const students = await apiFetch('/api/students?batch_id=' + batchId);
+    if (!students.length) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="placeholder"><span>👥</span>No students in this batch</div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = '';
+    students.forEach((s, i) => {
+      attendance[s.id] = null;
+      const tr = document.createElement('tr');
+      tr.id = `row-${s.id}`;
+      tr.dataset.phone = s.phone_number || '';
+      tr.dataset.name  = s.name || '';
+      tr.innerHTML = `
+        <td class="num-cell">${String(i+1).padStart(2,'0')}</td>
+        <td>
+          <div class="s-name">${esc(s.name)}</div>
+          <div style="margin-top:3px;"><span class="belt-badge ${beltClass(s.belt_level)}">${esc(s.belt_level)}</span></div>
+        </td>
+        <td><div class="att-btns">
+          <button class="att-btn btn-present" onclick="mark(${s.id},'present',this)">✔</button>
+          <button class="att-btn btn-absent"  onclick="mark(${s.id},'absent',this)">✖</button>
+        </div></td>
+        <td><span id="status-${s.id}" class="status-pill status-pending">—</span></td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('attActionBar').style.display = 'block';
+    updateSummary(students.length);
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="placeholder"><span>⚠️</span>Failed to load</div></td></tr>`;
+    toast('Error loading students', 'error');
+  }
+}
+
+function mark(id, status, btn) {
+  attendance[id] = status;
+  document.getElementById(`row-${id}`).querySelectorAll('.btn-present,.btn-absent').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const pill = document.getElementById(`status-${id}`);
+  pill.className = `status-pill status-${status}`;
+  pill.textContent = status === 'present' ? 'Present' : 'Absent';
+  updateSummary(Object.keys(attendance).length);
+}
+
+function updateSummary(total) {
+  const vals = Object.values(attendance);
+  document.getElementById('summaryTotal').textContent   = total;
+  document.getElementById('summaryPresent').textContent = vals.filter(v => v === 'present').length;
+  document.getElementById('summaryAbsent').textContent  = vals.filter(v => v === 'absent').length;
+}
+
+// ── SUBMIT ATTENDANCE + TRIGGER ABSENCE ALERTS ───────
+async function submitAll() {
+  const date = document.getElementById('dateInput').value;
+  if (!date) { toast('Please select a date', 'error'); return; }
+  const records = Object.entries(attendance).filter(([,s]) => s !== null)
+    .map(([id, status]) => ({ student_id: Number(id), status, date }));
+  if (!records.length) { toast('No attendance marked yet', 'error'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+  try {
+    await apiFetch('/api/attendance', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ records })
+    });
+
+    // Collect absent students with phone numbers
+    const absentStudents = [];
+    records.forEach(rec => {
+      if (rec.status !== 'absent') return;
+      const row = document.getElementById(`row-${rec.student_id}`);
+      if (!row) return;
+      const name  = row.dataset.name;
+      const phone = row.dataset.phone;
+      absentStudents.push({ id: rec.student_id, name, phone });
+    });
+
+    toast(`Saved ${records.length} records`, 'success');
+
+    if (absentStudents.length > 0) {
+      showAbsenceModal(absentStudents, date);
+    }
+
+  } catch (e) {
+    toast('Failed to save', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Save Attendance';
+  }
+}
+
+// ── ABSENCE MODAL (WhatsApp — background send) ───────
+let _absenceStudentsRef = [];
+let _absenceDateRef = '';
+
+function showAbsenceModal(absentStudents, date) {
+  _absenceStudentsRef = absentStudents;
+  _absenceDateRef = date;
+
+  const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
+
+  document.getElementById('absenceAlertSub').textContent =
+    `${absentStudents.length} student${absentStudents.length>1?'s':''} absent on ${dateLabel}`;
+
+  const btnsEl = document.getElementById('absenceWaButtons');
+  btnsEl.innerHTML = '';
+
+  absentStudents.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'notify-row';
+    row.id = `nrow-${i}`;
+
+    if (s.phone) {
+      row.innerHTML = `
+        <span style="font-size:18px;">💬</span>
+        <div class="notify-row-info">
+          <div class="notify-row-name">${esc(s.name)}</div>
+          <div class="notify-row-phone">${esc(s.phone)}</div>
+        </div>
+        <label class="wa-toggle">
+          <input type="checkbox" checked onchange="toggleNotifyRow(${i}, this)">
+          <div class="wa-toggle-track"></div>
+          <div class="wa-toggle-thumb"></div>
+        </label>`;
+    } else {
+      row.classList.add('off');
+      row.innerHTML = `
+        <span style="font-size:18px;">👤</span>
+        <div class="notify-row-info">
+          <div class="notify-row-name">${esc(s.name)}</div>
+          <div class="notify-row-nophone">No phone number on file</div>
+        </div>
+        <label class="wa-toggle" style="pointer-events:none;">
+          <input type="checkbox" disabled>
+          <div class="wa-toggle-track"></div>
+          <div class="wa-toggle-thumb"></div>
+        </label>`;
+    }
+    btnsEl.appendChild(row);
+  });
+
+  // Reset send status + button
+  const statusEl = document.getElementById('absenceSendStatus');
+  statusEl.style.display = 'none';
+  statusEl.textContent = '';
+  const sendBtn = document.getElementById('absenceSendBtn');
+  sendBtn.disabled = false;
+  sendBtn.innerHTML = '📲 Send Notifications';
+
+  document.getElementById('absenceModal').classList.add('open');
+}
+
+function toggleNotifyRow(i, checkbox) {
+  const row = document.getElementById('nrow-' + i);
+  if (checkbox.checked) row.classList.remove('off');
+  else row.classList.add('off');
+}
+
+async function sendAbsenceNotifications() {
+  const students = _absenceStudentsRef;
+  const date     = _absenceDateRef;
+
+  // Collect only toggled-on students with a phone number
+  const toSend = [];
+  students.forEach((s, i) => {
+    const row      = document.getElementById('nrow-' + i);
+    const checkbox = row ? row.querySelector('input[type="checkbox"]') : null;
+    if (checkbox && checkbox.checked && !checkbox.disabled && s.phone) {
+      toSend.push({ name: s.name, phone_number: s.phone });
+    }
+  });
+
+  if (!toSend.length) {
+    toast('No students selected to notify', 'error');
+    return;
+  }
+
+  const sendBtn  = document.getElementById('absenceSendBtn');
+  const statusEl = document.getElementById('absenceSendStatus');
+  sendBtn.disabled = true;
+  sendBtn.innerHTML = '⏳ Sending…';
+  statusEl.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/send-absence-notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ students: toSend, date })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const sent   = data.sent   || 0;
+      const failed = data.failed || 0;
+      statusEl.style.display = 'block';
+      statusEl.style.color   = failed > 0 ? 'var(--gold)' : 'var(--green)';
+      statusEl.textContent   = `✅ ${sent} sent${failed > 0 ? ` · ⚠️ ${failed} failed` : ''}`;
+      sendBtn.innerHTML = '✅ Done';
+      toast(`Sent ${sent} absence alert${sent !== 1 ? 's' : ''}`, 'success');
+    } else {
+      throw new Error(data.error || 'Unknown error');
+    }
+  } catch (e) {
+    statusEl.style.display = 'block';
+    statusEl.style.color   = 'var(--red)';
+    statusEl.textContent   = '❌ ' + (e.message || 'Failed to send');
+    sendBtn.disabled = false;
+    sendBtn.innerHTML = '📲 Send Notifications';
+  }
+}
+
+function buildAbsenceMessage(studentName, dateLabel) {
+  return `🥋 *Belt Book — Absence Alert*
+
+Dear Parent,
+
+Your ward *${studentName}* was absent for today's karate class on *${dateLabel}*.
+
+Regular attendance is important for belt progression. Please ensure your child attends consistently.
+
+For queries, contact the dojo directly.
+
+*Regards,*
+Dojo Management 🏯`;
+}
+
+function closeAbsenceModal() {
+  document.getElementById('absenceModal').classList.remove('open');
+}
+
+// ── STUDENTS ─────────────────────────────────────────
+async function initStudentsPage() {
+  populateDojo('sDojo', '— Select Dojo —');
+  document.getElementById('sDojo').onchange = onSDojoChange;
+  await loadStats();
+}
+
+async function loadStats() {
+  try {
+    const stats = await apiFetch('/api/students/stats');
+    document.getElementById('statTotal').textContent = stats.total;
+    document.getElementById('statBlack').textContent = stats.black;
+  } catch (_) {}
+}
+
+async function onSDojoChange() {
+  const dojoId = document.getElementById('sDojo').value;
+  const batchSel = document.getElementById('sBatch');
+  batchSel.innerHTML = '<option value="">All Batches</option>';
+  if (!dojoId) return;
+  try {
+    const batches = await apiFetch('/api/batches?dojo_id=' + dojoId);
+    batches.forEach(b => batchSel.innerHTML += `<option value="${b.id}">${esc(b.name)}</option>`);
+    await fetchAllStudents();
+  } catch (e) { toast('Failed to load batches', 'error'); }
+}
+
+async function fetchAllStudents() {
+  const dojoId  = document.getElementById('sDojo').value;
+  if (!dojoId) return;
+  try {
+    allStudents = await apiFetch('/api/students?dojo_id=' + dojoId);
+    filterStudents();
+  } catch (e) { toast('Failed to load students', 'error'); }
+}
+
+function filterStudents() {
+  const batchId = document.getElementById('sBatch').value;
+  const belt    = document.getElementById('sBelt').value;
+  const search  = (document.getElementById('sSearch').value || '').toLowerCase();
+  let filtered  = allStudents;
+  if (batchId) filtered = filtered.filter(s => String(s.batch_id) === batchId);
+  if (belt)    filtered = filtered.filter(s => (s.belt_level||'').toLowerCase() === belt.toLowerCase());
+  if (search)  filtered = filtered.filter(s => (s.name||'').toLowerCase().includes(search));
+
+  document.getElementById('studentCount').textContent = `${filtered.length} student${filtered.length !== 1 ? 's' : ''}`;
+  const tbody = document.getElementById('sTable');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="3"><div class="placeholder"><span>🔍</span>No matches</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = '';
+  filtered.forEach((s, i) => {
+    const tr = document.createElement('tr');
+    tr.className = 's-row-clickable';
+    tr.innerHTML = `
+      <td class="num-cell">${String(i+1).padStart(2,'0')}</td>
+      <td onclick="openStudentProfile(${s.id})">
+        <div class="s-name">${esc(s.name)}</div>
+        <div style="margin-top:3px;">
+          <span class="belt-badge ${beltClass(s.belt_level)}">${esc(s.belt_level)}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:5px;">${esc(s.batch_name||'')}</span>
+        </div>
+        ${s.phone_number ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">📞 ${esc(s.phone_number)}</div>` : ''}
+      </td>
+      <td>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <button class="btn btn-ghost btn-sm" onclick="openEditModal(${s.id});event.stopPropagation()">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id},'${esc(s.name)}');event.stopPropagation()">🗑</button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── STUDENT PROFILE ──────────────────────────────────
+async function openStudentProfile(id) {
+  profileHistory.push(id);
+  document.getElementById('students-list-view').style.display = 'none';
+  document.getElementById('student-profile-view').style.display = 'block';
+  document.getElementById('student-profile-view').innerHTML = `<div class="placeholder"><span class="spinner"></span>Loading profile…</div>`;
+  document.getElementById('backBtn').classList.add('visible');
+  document.getElementById('topPageLabel').textContent = 'Profile';
+  document.getElementById('scrollArea').scrollTop = 0;
+  try {
+    const data = await apiFetch(`/api/students/${id}/profile`);
+    renderStudentProfile(data);
+  } catch (e) {
+    document.getElementById('student-profile-view').innerHTML = `<div class="placeholder"><span>⚠️</span>Failed to load profile</div>`;
+    toast('Error loading profile', 'error');
+  }
+}
+
+function renderStudentProfile(data) {
+  const { student, attendance: att, fees } = data;
+  const stats = att.stats;
+  const pct   = stats.percentage;
+  const circColor = pct >= 60 ? 'green' : 'red';
+  const r = 29, circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
+
+  const byMonth = {};
+  att.records.forEach(rec => {
+    const d = new Date(rec.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(rec);
+  });
+
+  const monthDotsHtml = Object.entries(byMonth).slice(0,6).map(([key, recs]) => {
+    const [yr, mo] = key.split('-');
+    const dots = recs.map(r => {
+      const d = new Date(r.date);
+      return `<div class="att-dot ${r.status}" title="${r.date}">${d.getDate()}</div>`;
+    }).join('');
+    return `<div class="att-month-block">
+      <div class="att-month-label">${MONTH_NAMES[parseInt(mo)]} ${yr}</div>
+      <div class="att-dots">${dots}</div>
+    </div>`;
+  }).join('');
+
+  const feeRowsHtml = fees.length ? fees.map(f => {
+    const isPaid = f.status === 'paid';
+    return `<div class="fee-month-row">
+      <div>
+        <div class="fee-month-name">${MONTH_NAMES[f.month]}</div>
+        <div class="fee-month-year">${f.year}</div>
+      </div>
+      <span class="status-pill ${isPaid ? 'status-present' : 'status-absent'}">${isPaid ? 'Paid' : 'Unpaid'}</span>
+    </div>`;
+  }).join('') : `<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">No fee records yet</div>`;
+
+  const monthlyHtml = att.monthly.length ? att.monthly.map(m => {
+    const mpct = m.total > 0 ? Math.round(m.present / m.total * 100) : 0;
+    const barColor = mpct >= 80 ? 'var(--green)' : mpct >= 50 ? 'var(--gold)' : 'var(--red)';
+    return `<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:500;color:var(--muted);margin-bottom:5px;">
+        <span>${MONTH_NAMES[m.month]} ${m.year}</span>
+        <span style="color:${barColor};font-family:'Oswald',sans-serif;">${mpct}% &middot; ${m.present}/${m.total}</span>
+      </div>
+      <div class="progress-track"><div style="height:100%;width:${mpct}%;background:${barColor};border-radius:20px;transition:width 0.6s;"></div></div>
+    </div>`;
+  }).join('') : `<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">No monthly data</div>`;
+
+  document.getElementById('student-profile-view').innerHTML = `
+    <div class="profile-hero">
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <div style="flex:1;">
+          <div class="profile-avatar">🥋</div>
+          <div class="profile-name">${esc(student.name)}</div>
+          <div class="profile-meta">
+            <span class="belt-badge ${beltClass(student.belt_level)}">${esc(student.belt_level)}</span>
+            <span style="font-size:11px;color:var(--muted);">📌 ${esc(student.batch_name)}</span>
+          </div>
+          <div class="profile-meta" style="margin-top:4px;">
+            <span class="profile-phone">🏯 ${esc(student.dojo_name)}</span>
+          </div>
+          ${student.phone_number ? `<div class="profile-meta"><a href="tel:${esc(student.phone_number)}" style="color:var(--red);font-size:12px;font-weight:600;text-decoration:none;">📞 ${esc(student.phone_number)}</a></div>` : ''}
+        </div>
+        <div style="flex-shrink:0;">
+          <div class="circ-prog">
+            <svg viewBox="0 0 76 76" width="76" height="76">
+              <circle class="track" cx="38" cy="38" r="${r}"/>
+              <circle class="fill ${circColor}" cx="38" cy="38" r="${r}"
+                stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+            </svg>
+            <div class="circ-label">
+              <div class="pct">${pct}%</div>
+              <div class="sub">ATTEND</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row cols3">
+      <div class="stat-card"><div class="stat-label">Classes</div><div class="stat-value muted" style="font-size:22px;">${stats.total}</div></div>
+      <div class="stat-card"><div class="stat-label">Present</div><div class="stat-value green" style="font-size:22px;">${stats.present}</div></div>
+      <div class="stat-card"><div class="stat-label">Absent</div><div class="stat-value red"   style="font-size:22px;">${stats.absent}</div></div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openEditModal(${student.id})">✏️ Edit</button>
+      <button class="btn btn-danger btn-sm" style="flex:1;" onclick="deleteStudent(${student.id},'${esc(student.name)}')">🗑 Delete</button>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Monthly Attendance</div>
+      ${monthlyHtml}
+    </div>
+    <div class="card">
+      <div class="card-label">Attendance History</div>
+      ${att.records.length ? monthDotsHtml : '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">No records yet</div>'}
+    </div>
+    <div class="card">
+      <div class="card-label">Fee History</div>
+      ${feeRowsHtml}
+    </div>`;
+}
+
+// ── MODAL ────────────────────────────────────────────
+async function loadModalBatches() {
+  const dojoId = document.getElementById('mDojo').value;
+  const mBatch = document.getElementById('mBatch');
+  mBatch.innerHTML = '<option value="">Loading…</option>';
+  if (!dojoId) return;
+  try {
+    const batches = await apiFetch('/api/batches?dojo_id=' + dojoId);
+    mBatch.innerHTML = batches.length
+      ? batches.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('')
+      : '<option value="">No batches</option>';
+  } catch (_) { mBatch.innerHTML = '<option>Error</option>'; }
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent   = 'Add Student';
+  document.getElementById('modalSaveBtn').textContent = 'Save';
+  document.getElementById('mName').value  = '';
+  document.getElementById('mPhone').value = '';
+  document.getElementById('mBelt').value  = 'White';
+  populateDojo('mDojo', null);
+  const dojoId = document.getElementById('sDojo').value;
+  if (dojoId) document.getElementById('mDojo').value = dojoId;
+  loadModalBatches();
+  document.getElementById('studentModal').classList.add('open');
+}
+
+async function openEditModal(id) {
+  editingId = id;
+  let student = allStudents.find(x => x.id === id);
+  if (!student) {
+    try {
+      const data = await apiFetch(`/api/students/${id}/profile`);
+      student = data.student;
+      student.batch_id = data.student.batch_id;
+    } catch(e) { toast('Failed to load student data', 'error'); return; }
+  }
+  document.getElementById('modalTitle').textContent   = 'Edit Student';
+  document.getElementById('modalSaveBtn').textContent = 'Update';
+  document.getElementById('mName').value  = student.name;
+  document.getElementById('mPhone').value = student.phone_number || '';
+  document.getElementById('mBelt').value  = student.belt_level;
+  populateDojo('mDojo', null);
+  document.getElementById('mDojo').value = student.dojo_id || document.getElementById('sDojo').value;
+  await loadModalBatches();
+  document.getElementById('mBatch').value = student.batch_id;
+  document.getElementById('studentModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('studentModal').classList.remove('open'); }
+
+async function saveStudent() {
+  const name         = document.getElementById('mName').value.trim();
+  const phone_number = document.getElementById('mPhone').value.trim();
+  const batchId      = document.getElementById('mBatch').value;
+  const belt         = document.getElementById('mBelt').value;
+  if (!name)    { toast('Enter a name', 'error'); return; }
+  if (!batchId) { toast('Select a batch', 'error'); return; }
+  const btn = document.getElementById('modalSaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const payload = { name, batch_id: batchId, belt_level: belt, phone_number };
+    if (editingId) {
+      await apiFetch(`/api/students/${editingId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      toast('Student updated', 'success');
+      if (document.getElementById('student-profile-view').style.display !== 'none') {
+        openStudentProfile(editingId);
+      }
+    } else {
+      await apiFetch('/api/students', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      toast('Student added', 'success');
+    }
+    closeModal(); await fetchAllStudents(); await loadStats();
+  } catch (e) { toast(e.message || 'Failed to save', 'error'); }
+  finally { btn.disabled = false; btn.textContent = editingId ? 'Update' : 'Save'; }
+}
+
+async function deleteStudent(id, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try {
+    await apiFetch(`/api/students/${id}`, { method:'DELETE' });
+    toast(`${name} removed`, 'info');
+    showStudentsList();
+    await fetchAllStudents(); await loadStats();
+  } catch (e) { toast('Failed to delete', 'error'); }
+}
+
+document.getElementById('studentModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+// ── REPORTS ──────────────────────────────────────────
+function initReportsPage() {
+  populateDojo('rDojo', '— Select Dojo —');
+  document.getElementById('rDojo').onchange = onRDojoChange;
+  const mwSel = document.getElementById('mwDojo');
+  mwSel.innerHTML = '<option value="all">All Dojos</option>';
+  cachedDojos.forEach(d => mwSel.innerHTML += `<option value="${d.id}">${esc(d.name)}</option>`);
+  mwSel.onchange = onMwDojoChange;
+}
+
+async function onRDojoChange() {
+  const dojoId = document.getElementById('rDojo').value;
+  const sel = document.getElementById('rBatch');
+  sel.innerHTML = '<option value="">— Select Batch —</option>';
+  if (!dojoId) return;
+  try {
+    const batches = await apiFetch('/api/batches?dojo_id=' + dojoId);
+    batches.forEach(b => sel.innerHTML += `<option value="${b.id}">${esc(b.name)}</option>`);
+  } catch (e) { toast('Failed to load batches', 'error'); }
+}
+
+let currentRFilter = 'all';
+
+async function loadReport() {
+  const dojoId  = document.getElementById('rDojo').value;
+  const batchId = document.getElementById('rBatch').value;
+  const date    = document.getElementById('rDate').value;
+  if (!dojoId || !batchId || !date) { toast('Select dojo, batch and date', 'error'); return; }
+  document.getElementById('rPlaceholder').style.display = 'none';
+  try {
+    const { students, summary } = await apiFetch(`/api/reports?dojo_id=${dojoId}&batch_id=${batchId}&date=${date}`);
+    const tbody = document.getElementById('rTable');
+    tbody.innerHTML = '';
+    students.forEach((s, i) => {
+      const st = s.status === 'present' ? 'present' : s.status === 'absent' ? 'absent' : 'none';
+      const pc = st === 'present' ? 'status-present' : st === 'absent' ? 'status-absent' : 'status-pending';
+      const pt = st === 'present' ? 'Present' : st === 'absent' ? 'Absent' : 'Not Marked';
+      const tr = document.createElement('tr');
+      tr.dataset.status = st;
+      tr.innerHTML = `
+        <td class="num-cell">${String(i+1).padStart(2,'0')}</td>
+        <td><div class="s-name">${esc(s.name)}</div><div style="margin-top:2px;"><span class="belt-badge ${beltClass(s.belt_level)}">${esc(s.belt_level)}</span></div></td>
+        <td><span class="status-pill ${pc}">${pt}</span></td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('rTotal').textContent    = summary.total;
+    document.getElementById('rPresent').textContent  = summary.present;
+    document.getElementById('rAbsent').textContent   = summary.absent;
+    document.getElementById('rProgressBar').style.width   = summary.percent + '%';
+    document.getElementById('rProgressLabel').textContent = summary.percent + '%';
+    document.getElementById('rTableCount').textContent =
+      `${summary.total} total · ${summary.present} present · ${summary.absent} absent`;
+    document.getElementById('rStatsArea').style.display  = 'block';
+    document.getElementById('rTableCard').style.display  = 'block';
+    setRFilter(currentRFilter, document.querySelector(`#rTableCard .rpill[data-f="${currentRFilter}"]`));
+  } catch (e) { toast('Failed to generate report', 'error'); }
+}
+
+function setRFilter(filter, el) {
+  currentRFilter = filter;
+  document.querySelectorAll('#rTableCard .rpill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('#rTable tr').forEach(tr => {
+    tr.style.display = filter === 'all' ? '' : filter === tr.dataset.status ? '' : 'none';
+  });
+}
+
+// ── MONTHLY NO-ABSENCES ───────────────────────────────
+async function onMwDojoChange() {
+  const dojoId = document.getElementById('mwDojo').value;
+  const sel = document.getElementById('mwBatch');
+  sel.innerHTML = '<option value="">All Batches</option>';
+  if (!dojoId || dojoId === 'all') return;
+  try {
+    const batches = await apiFetch('/api/batches?dojo_id=' + dojoId);
+    batches.forEach(b => sel.innerHTML += `<option value="${b.id}">${esc(b.name)}</option>`);
+  } catch (e) { toast('Failed to load batches', 'error'); }
+}
+
+async function loadNoAbsences() {
+  const dojoId  = document.getElementById('mwDojo').value;
+  const batchId = document.getElementById('mwBatch').value;
+  const month   = document.getElementById('mwMonth').value;
+  const year    = document.getElementById('mwYear').value;
+  const btn = document.getElementById('mwFindBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Loading…';
+  document.getElementById('mwPlaceholder').style.display = 'none';
+  document.getElementById('mwResults').style.display     = 'none';
+  try {
+    let url = `/api/attendance/no-absences?dojo_id=${dojoId}&month=${month}&year=${year}`;
+    if (batchId) url += `&batch_id=${batchId}`;
+    const data = await apiFetch(url);
+    mwNoAbsData  = data.no_absence_students  || [];
+    mwHadAbsData = data.had_absence_students || [];
+    mwTotalCount = data.total_students || 0;
+    document.getElementById('mwTotal').textContent   = mwTotalCount;
+    document.getElementById('mwPerfect').textContent = mwNoAbsData.length;
+    const list = document.getElementById('mwPerfectList');
+    if (!mwNoAbsData.length) {
+      list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">No students with zero absences found.</div>`;
+    } else {
+      list.innerHTML = mwNoAbsData.map((s, i) => `
+        <div class="perfect-row">
+          <span class="perfect-num">${i+1}</span>
+          <span class="perfect-name">${esc(s.name)}</span>
+          <span class="belt-badge ${beltClass(s.belt_level)}">${esc(s.belt_level)}</span>
+        </div>`).join('');
+    }
+    const absentCard = document.getElementById('mwAbsentCard');
+    const absentList = document.getElementById('mwAbsentList');
+    if (mwHadAbsData.length) {
+      absentList.innerHTML = mwHadAbsData.map((s, i) => `
+        <div class="perfect-row" style="border-color:rgba(232,25,44,0.08);">
+          <span class="perfect-num">${i+1}</span>
+          <span class="perfect-name">${esc(s.name)}</span>
+          <span class="belt-badge ${beltClass(s.belt_level)}">${esc(s.belt_level)}</span>
+        </div>`).join('');
+      absentCard.style.display = 'block';
+    } else { absentCard.style.display = 'none'; }
+    document.getElementById('mwResults').style.display = 'block';
+  } catch (e) {
+    toast('Failed: ' + (e.message || ''), 'error');
+    document.getElementById('mwPlaceholder').style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'Find Zero Absence Students';
+  }
+}
+
+function generateMonthlyWhatsApp() {
+  const month   = Number(document.getElementById('mwMonth').value);
+  const year    = document.getElementById('mwYear').value;
+  const dojoOpt = document.getElementById('mwDojo');
+  const dojoName = dojoOpt.options[dojoOpt.selectedIndex]?.text || 'Dojo';
+  let msg = `🥋 *ZERO ABSENCES — ${MONTH_NAMES[month].toUpperCase()} ${year}*\n`;
+  msg += `🏯 ${dojoName}\n━━━━━━━━━━━━━━━━━\n`;
+  msg += `⭐ Students with *zero absences* this month:\n\n`;
+  if (!mwNoAbsData.length) { msg += `_(No students with zero absences)_\n`; }
+  else {
+    mwNoAbsData.forEach((s, i) => { msg += `${i+1}. ${s.name} — ${s.belt_level}\n`; });
+    msg += `\n✅ ${mwNoAbsData.length} / ${mwTotalCount} students — Zero Absences!`;
+  }
+  msg += `\n\nKeep training hard! 💪🥋 OSU!`;
+  document.getElementById('waMessageBox').textContent = msg;
+  document.getElementById('waModal').classList.add('open');
+}
+
+// ── FEES ─────────────────────────────────────────────
+function initFeesPage() {
+  populateDojo('fDojo', '— Select Dojo —');
+  document.getElementById('fDojo').onchange = onFDojoChange;
+  document.getElementById('fMonth').value = new Date().getMonth() + 1;
+}
+
+function onFDojoChange() {
+  feeData = []; currentFeeFilter = 'all';
+  document.getElementById('fStatsRow').style.display   = 'none';
+  document.getElementById('fTableCard').style.display  = 'none';
+  document.getElementById('fPlaceholder').style.display = 'block';
+  document.getElementById('fBatchGroups').innerHTML    = '';
+}
+
+async function loadFees() {
+  const dojoId = document.getElementById('fDojo').value;
+  fMonth_cur   = document.getElementById('fMonth').value;
+  fYear_cur    = document.getElementById('fYear').value;
+  if (!dojoId) { toast('Select a dojo', 'error'); return; }
+  document.getElementById('fBatchGroups').innerHTML      = `<div class="card"><div class="placeholder"><span class="spinner"></span>Loading…</div></div>`;
+  document.getElementById('fPlaceholder').style.display  = 'none';
+  document.getElementById('fTableCard').style.display    = 'block';
+  document.getElementById('fStatsRow').style.display     = 'none';
+  currentFeeFilter = 'all';
+  document.querySelectorAll('[id^="frPill-"]').forEach(p => p.classList.remove('active'));
+  document.getElementById('frPill-all').classList.add('active');
+  try {
+    feeData = await apiFetch(`/api/fees?dojo_id=${dojoId}&month=${fMonth_cur}&year=${fYear_cur}`);
+    renderFeeGroups();
+  } catch (e) {
+    document.getElementById('fBatchGroups').innerHTML = `<div class="card"><div class="placeholder"><span>⚠️</span>Failed</div></div>`;
+    toast('Error loading fees', 'error');
+  }
+}
+
+function renderFeeGroups() {
+  const container = document.getElementById('fBatchGroups');
+  container.innerHTML = '';
+  if (!feeData.length) { container.innerHTML = `<div class="card"><div class="placeholder"><span>👥</span>No students found</div></div>`; return; }
+  const groups = {}; const order = [];
+  feeData.forEach(s => {
+    const bn = s.batch_name || 'Unknown';
+    if (!groups[bn]) { groups[bn] = []; order.push(bn); }
+    groups[bn].push(s);
+  });
+  order.forEach(batchName => {
+    const students = groups[batchName];
+    const allPaid  = students.every(s => s.fee_status === 'paid');
+    const card     = document.createElement('div');
+    card.className = 'card'; card.style.marginBottom = '10px';
+    const rows = students.map((s, i) => {
+      const isPaid = s.fee_status === 'paid';
+      return `
+        <tr data-fee-status="${isPaid ? 'paid' : 'unpaid'}" data-batch="${esc(batchName)}" data-sid="${s.id}">
+          <td class="num-cell">${String(i+1).padStart(2,'0')}</td>
+          <td>
+            <div class="s-name">${esc(s.name)}</div>
+            <div style="margin-top:2px;"><span class="belt-badge ${beltClass(s.belt_level)}">${esc(s.belt_level)}</span></div>
+          </td>
+          <td>
+            <div class="fee-toggle" id="ft-${s.id}">
+              <button class="fee-toggle-btn paid   ${isPaid  ? 'active':''}" onclick="toggleFee(${s.id},true,this)">✔ Paid</button>
+              <button class="fee-toggle-btn unpaid ${!isPaid ? 'active':''}" onclick="toggleFee(${s.id},false,this)">✖ Unpaid</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+    card.innerHTML = `
+      <div class="batch-hdr">
+        <span>${esc(batchName)}</span>
+        <button class="btn btn-gold btn-sm" id="bulk-${esc(batchName)}" onclick="markBatchPaid('${esc(batchName)}')">
+          ${allPaid ? '✔ All Paid' : 'Mark All Paid'}
+        </button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Student</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+    container.appendChild(card);
+  });
+  updateFeeStats();
+  applyFeeFilter();
+}
+
+async function toggleFee(studentId, paid, btn) {
+  const status = paid ? 'paid' : 'unpaid';
+  const s = feeData.find(x => x.id === studentId);
+  if (s) s.fee_status = status;
+  const toggle = document.getElementById('ft-' + studentId);
+  toggle.querySelectorAll('.fee-toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const tr = toggle.closest('tr');
+  if (tr) tr.dataset.feeStatus = status;
+  try {
+    await apiFetch('/api/fees', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ student_id: studentId, month: fMonth_cur, year: fYear_cur, status }) });
+  } catch (e) { toast('Failed to update fee', 'error'); }
+  updateFeeStats();
+  applyFeeFilter();
+}
+
+function updateFeeStats() {
+  const paid   = feeData.filter(s => s.fee_status === 'paid').length;
+  const unpaid = feeData.filter(s => s.fee_status !== 'paid').length;
+  const total  = feeData.length;
+  const pct    = total ? Math.round(paid / total * 100) : 0;
+  document.getElementById('fTotal').textContent   = total;
+  document.getElementById('fPaid').textContent    = paid;
+  document.getElementById('fUnpaid').textContent  = unpaid;
+  document.getElementById('fPercent').textContent = pct + '%';
+  document.getElementById('fStatsRow').style.display = 'grid';
+}
+
+function applyFeeFilter() {
+  document.querySelectorAll('#fBatchGroups tr[data-fee-status]').forEach(tr => {
+    const status = tr.dataset.feeStatus;
+    tr.style.display = currentFeeFilter === 'all' ? '' : status === currentFeeFilter ? '' : 'none';
+  });
+}
+
+function setFeeFilter(filter, el) {
+  currentFeeFilter = filter;
+  document.querySelectorAll('[id^="frPill-"]').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  applyFeeFilter();
+}
+
+async function markBatchPaid(batchName) {
+  const students = feeData.filter(s => s.batch_name === batchName);
+  for (const s of students) {
+    s.fee_status = 'paid';
+    const toggle = document.getElementById('ft-' + s.id);
+    if (!toggle) continue;
+    toggle.querySelectorAll('.fee-toggle-btn').forEach(b => b.classList.remove('active'));
+    toggle.querySelector('.paid')?.classList.add('active');
+    const tr = toggle.closest('tr');
+    if (tr) tr.dataset.feeStatus = 'paid';
+    try {
+      await apiFetch('/api/fees', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ student_id: s.id, month: fMonth_cur, year: fYear_cur, status: 'paid' }) });
+    } catch (e) {}
+  }
+  updateFeeStats();
+  applyFeeFilter();
+  toast(`${batchName} — all marked paid`, 'success');
+}
+
+async function markAllFees(status) {
+  for (const s of feeData) {
+    s.fee_status = status;
+    const toggle = document.getElementById('ft-' + s.id);
+    if (!toggle) continue;
+    toggle.querySelectorAll('.fee-toggle-btn').forEach(b => b.classList.remove('active'));
+    toggle.querySelector('.' + status)?.classList.add('active');
+    const tr = toggle.closest('tr');
+    if (tr) tr.dataset.feeStatus = status;
+    try {
+      await apiFetch('/api/fees', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ student_id: s.id, month: fMonth_cur, year: fYear_cur, status }) });
+    } catch (e) {}
+  }
+  updateFeeStats();
+  applyFeeFilter();
+  toast(`All marked ${status}`, 'success');
+}
+
+function generateFeeWhatsApp() {
+  const monthName = MONTH_NAMES[Number(fMonth_cur)];
+  const dojoOpt   = document.getElementById('fDojo');
+  const dojoName  = dojoOpt.options[dojoOpt.selectedIndex]?.text || 'Dojo';
+  const paid      = feeData.filter(s => s.fee_status === 'paid');
+  const unpaid    = feeData.filter(s => s.fee_status !== 'paid');
+  let msg = `💰 *FEE STATUS — ${monthName.toUpperCase()} ${fYear_cur}*\n`;
+  msg += `🏯 ${dojoName}\n━━━━━━━━━━━━━━━━━\n\n`;
+  if (unpaid.length) {
+    msg += `❌ *UNPAID (${unpaid.length}):*\n`;
+    unpaid.forEach((s, i) => { msg += `  ${i+1}. ${s.name}\n`; });
+  }
+  if (paid.length) {
+    msg += `\n✅ *PAID (${paid.length}):*\n`;
+    paid.forEach((s, i) => { msg += `  ${i+1}. ${s.name}\n`; });
+  }
+  msg += `\n📊 ${paid.length}/${feeData.length} collected`;
+  document.getElementById('waMessageBox').textContent = msg;
+  document.getElementById('waModal').classList.add('open');
+}
+
+// ── BELT TEST ─────────────────────────────────────────
+function initBeltTestPage() {
+  populateDojo('btDojo', '— Select Dojo —');
+  document.getElementById('btDojo').onchange = onBtDojoChange;
+}
+
+async function onBtDojoChange() {
+  const dojoId = document.getElementById('btDojo').value;
+  const sel = document.getElementById('btBatch');
+  sel.innerHTML = '<option value="">All Batches</option>';
+  if (!dojoId) return;
+  try {
+    const batches = await apiFetch('/api/batches?dojo_id=' + dojoId);
+    batches.forEach(b => sel.innerHTML += `<option value="${b.id}">${esc(b.name)}</option>`);
+  } catch (e) {}
+}
+
+async function loadBeltTest() {
+  const dojoId  = document.getElementById('btDojo').value;
+  const batchId = document.getElementById('btBatch').value;
+  if (!dojoId) { toast('Select a dojo', 'error'); return; }
+  document.getElementById('btContent').style.display     = 'none';
+  document.getElementById('btPlaceholder').style.display = 'none';
+  document.getElementById('btResults').style.display     = 'none';
+  btIneligibleIds.clear();
+  try {
+    btStudents = await apiFetch(`/api/belt-test/students?dojo_id=${dojoId}${batchId?'&batch_id='+batchId:''}`);
+    if (!btStudents.length) { toast('No students found', 'error'); document.getElementById('btPlaceholder').style.display='block'; return; }
+    document.getElementById('btTotal').textContent     = btStudents.length;
+    document.getElementById('btIneligible').textContent = 0;
+    renderDedicationList();
+    renderBeltTestList();
+    document.getElementById('btContent').style.display = 'block';
+  } catch (e) { toast('Failed to load students', 'error'); document.getElementById('btPlaceholder').style.display='block'; }
+}
+
+function renderDedicationList() {
+  const container = document.getElementById('btDedicationList');
+  container.innerHTML = '';
+  const top = btStudents.slice(0, 8);
+  top.forEach((s, i) => {
+    const att = s.attendance_stats || {};
+    const cl  = att.percentage >= 85 ? 'good' : att.percentage >= 65 ? 'warn' : 'bad';
+    const rankCls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'other';
+    const div = document.createElement('div');
+    div.className = 'ded-row';
+    div.innerHTML = `
+      <div class="ded-rank ${rankCls}">${i < 3 ? ['🥇','🥈','🥉'][i] : i+1}</div>
+      <div class="ded-info">
+        <div class="ded-name">${esc(s.name)}</div>
+        <div class="ded-sub"><span class="belt-badge ${beltClass(s.belt_level)}">${esc(s.belt_level)}</span></div>
+      </div>
+      <div class="ded-badge">
+        <div class="ded-att ${cl}">${att.percentage||0}%</div>
+        <div class="ded-att-sub">${att.absences||0} absent</div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function renderBeltTestList() {
+  const container = document.getElementById('btList');
+  container.innerHTML = '';
+  const groups = {}; const order = [];
+  btStudents.forEach(s => {
+    const bn = s.batch_name || 'Unknown';
+    if (!groups[bn]) { groups[bn] = []; order.push(bn); }
+    groups[bn].push(s);
+  });
+  order.forEach(batchName => {
+    const hdr = document.createElement('div');
+    hdr.className = 'bt-batch-hdr';
+    hdr.textContent = batchName;
+    container.appendChild(hdr);
+    groups[batchName].forEach(s => {
+      const isIneligible = btIneligibleIds.has(s.id);
+      const nb  = nextBeltLabel(s.belt_level);
+      const att = s.attendance_stats || { absences:0, percentage:0 };
+      const row = document.createElement('div');
+      row.className = 'bt-row';
+      row.id = `bt-row-${s.id}`;
+      row.innerHTML = `
+        <div class="bt-check ${isIneligible ? 'ineligible' : ''}" id="bt-chk-${s.id}" onclick="toggleIneligible(${s.id})">
+          ${isIneligible ? '✖' : ''}
+        </div>
+        <div class="bt-info">
+          <div class="s-name" style="font-size:14px;">${esc(s.name)}</div>
+          <div style="margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="belt-badge ${beltClass(s.belt_level)}">${esc(s.belt_level)}</span>
+            <span style="font-size:10px;color:${att.absences === 0 ? 'var(--green)' : att.absences <= 2 ? 'var(--gold)' : 'var(--red)'};">
+              ${att.absences} absent · ${att.percentage}%
+            </span>
+          </div>
+        </div>
+        <div class="bt-arrow ${isIneligible ? 'skipped' : 'promoted'}" id="bt-arrow-${s.id}">
+          ${isIneligible ? '🔒 Hold' : `→ ${esc(nb)}`}
+        </div>`;
+      container.appendChild(row);
+    });
+  });
+}
+
+function toggleIneligible(id) {
+  if (btIneligibleIds.has(id)) btIneligibleIds.delete(id);
+  else btIneligibleIds.add(id);
+  const s  = btStudents.find(x => x.id === id);
+  const nb = nextBeltLabel(s.belt_level);
+  const chk   = document.getElementById('bt-chk-' + id);
+  const arrow = document.getElementById('bt-arrow-' + id);
+  const ineligible = btIneligibleIds.has(id);
+  chk.className   = 'bt-check' + (ineligible ? ' ineligible' : '');
+  chk.textContent = ineligible ? '✖' : '';
+  arrow.className = 'bt-arrow ' + (ineligible ? 'skipped' : 'promoted');
+  arrow.textContent = ineligible ? '🔒 Hold' : `→ ${nb}`;
+  document.getElementById('btIneligible').textContent = btIneligibleIds.size;
+}
+
+function btSelectAll()  { btStudents.forEach(s => btIneligibleIds.add(s.id));    renderBeltTestList(); }
+function btSelectNone() { btIneligibleIds.clear(); renderBeltTestList(); }
+
+function confirmBeltTest() {
+  const eligible   = btStudents.filter(s => !btIneligibleIds.has(s.id));
+  const ineligible = btStudents.filter(s =>  btIneligibleIds.has(s.id));
+  const txt = document.getElementById('btConfirmText');
+  txt.innerHTML = `
+    <b style="color:var(--white);">Promoting ${eligible.length} student(s).</b><br><br>
+    <span style="color:var(--green);">✅ Will be promoted (${eligible.length}):</span><br>
+    ${eligible.map(s => `${s.name} → ${nextBeltLabel(s.belt_level)}`).join('<br>') || 'None'}<br><br>
+    <span style="color:var(--red);">🔒 Will stay (${ineligible.length}):</span><br>
+    ${ineligible.map(s => `${s.name} (${s.belt_level})`).join('<br>') || 'None'}`;
+  document.getElementById('btConfirmModal').classList.add('open');
+}
+
+function closeBtModal() { document.getElementById('btConfirmModal').classList.remove('open'); }
+
+async function executeBeltTest() {
+  const btn = document.getElementById('btDoPromote');
+  btn.disabled = true; btn.textContent = 'Promoting…';
+  try {
+    const result = await apiFetch('/api/belt-test/promote', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ student_ids: btStudents.map(s => s.id), ineligible_ids: [...btIneligibleIds] })
+    });
+    closeBtModal();
+    const resList = document.getElementById('btResultList');
+    resList.innerHTML = '';
+    result.promoted.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'perfect-row';
+      div.innerHTML = `<span class="perfect-num">✅</span><span class="perfect-name">${esc(btStudents.find(s=>s.id===p.id)?.name||'')}</span><span style="font-size:12px;color:var(--green);font-family:'Oswald',sans-serif;">${esc(p.old_belt)} → ${esc(p.new_belt)}</span>`;
+      resList.appendChild(div);
+    });
+    result.skipped.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'perfect-row';
+      div.style.borderColor = 'rgba(232,25,44,0.1)';
+      div.innerHTML = `<span class="perfect-num">🔒</span><span class="perfect-name">${esc(btStudents.find(s=>s.id===p.id)?.name||'')}</span><span style="font-size:12px;color:var(--red);font-family:'Oswald',sans-serif;">Stays at ${esc(p.belt)}</span>`;
+      resList.appendChild(div);
+    });
+    document.getElementById('btResults').style.display  = 'block';
+    document.getElementById('btContent').style.display  = 'none';
+    document.getElementById('btPlaceholder').style.display = 'none';
+    toast(`🥋 ${result.promoted.length} students promoted!`, 'success');
+  } catch (e) {
+    toast('Promotion failed: ' + (e.message||''), 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Confirm & Promote';
+  }
+}
+
+document.getElementById('btConfirmModal').addEventListener('click', function(e) { if (e.target===this) closeBtModal(); });
+
+// ── WHATSAPP HELPERS ─────────────────────────────────
+function closeWaModal() { document.getElementById('waModal').classList.remove('open'); }
+
+function copyWaMessage() {
+  const text = document.getElementById('waMessageBox').textContent;
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text)
+      .then(() => toast('Copied!', 'success'))
+      .catch(() => toast('Select and copy manually', 'error'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); toast('Copied!', 'success'); }
+    catch { toast('Select and copy manually', 'error'); }
+    document.body.removeChild(ta);
+  }
+}
+
+document.getElementById('waModal').addEventListener('click', function(e) { if (e.target===this) closeWaModal(); });
+document.getElementById('absenceModal').addEventListener('click', function(e) { if (e.target===this) closeAbsenceModal(); });
+  // ── PWA Service Worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/static/service-worker.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW failed:', err));
+  });
+}
+</script>
+</body>
+</html>
