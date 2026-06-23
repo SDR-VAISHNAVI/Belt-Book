@@ -1141,16 +1141,12 @@
     </div>
     <div class="wa-dot" id="waDot"></div>
   </div>
-  <div id="waPairingWrap" style="display:none;margin-top:16px;">
-    <button class="settings-action-btn" id="waGetCodeBtn" onclick="waConnect()" style="width:100%;">Get Pairing Code</button>
-  </div>
-  <div id="waPairingCodeWrap" style="display:none;margin-top:16px;text-align:center;">
-    <div class="wa-status-sub" style="margin-bottom:8px;">Enter this code in WhatsApp → Linked Devices → Link with phone number</div>
-    <div id="waPairingCode" style="font-size:32px;font-weight:700;letter-spacing:6px;color:var(--white);background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;"></div>
-    <div class="wa-status-sub" style="margin-top:8px;" id="waCodeTimer"></div>
-    <button class="settings-action-btn" onclick="waRegenCode()" style="margin-top:10px;width:100%;">Get New Code</button>
+  <div id="waQrWrap" style="display:none;text-align:center;margin:16px 0;">
+    <div class="wa-status-sub" style="margin-bottom:10px;">Scan this QR code with WhatsApp on your phone</div>
+    <img id="waQrImg" src="" style="width:200px;height:200px;border-radius:8px;border:2px solid var(--border);"/>
   </div>
   <div style="display:flex;gap:8px;margin-top:12px;">
+    <button class="settings-action-btn" id="waConnectBtn" onclick="waConnect()" style="display:none;">Connect WhatsApp</button>
     <button class="settings-action-btn danger" id="waDisconnectBtn" onclick="waDisconnect()" style="display:none;">Disconnect</button>
   </div>
 
@@ -1625,108 +1621,73 @@ function closeSettings() {
 let _waPoller = null;
 
 async function refreshWaStatus() {
-  const statusText    = document.getElementById('waStatusText');
-  const statusSub     = document.getElementById('waStatusSub');
-  const dot           = document.getElementById('waDot');
-  const pairingWrap   = document.getElementById('waPairingWrap');
-  const pairingCodeWrap = document.getElementById('waPairingCodeWrap');
-  const disconnBtn    = document.getElementById('waDisconnectBtn');
+  const statusText = document.getElementById('waStatusText');
+  const statusSub  = document.getElementById('waStatusSub');
+  const dot        = document.getElementById('waDot');
+  const qrWrap     = document.getElementById('waQrWrap');
+  const connectBtn = document.getElementById('waConnectBtn');
+  const disconnBtn = document.getElementById('waDisconnectBtn');
   try {
-    const r    = await fetch('/api/whatsapp/status', { credentials: 'include' });
+    const r = await fetch('/api/whatsapp/status', { credentials: 'include' });
     const data = await r.json();
     if (data.connected) {
-      statusText.textContent      = 'Connected';
-      statusSub.textContent       = 'WhatsApp is active';
-      dot.className               = 'wa-dot connected';
-      pairingWrap.style.display   = 'none';
-      pairingCodeWrap.style.display = 'none';
-      disconnBtn.style.display    = '';
+      statusText.textContent = 'Connected';
+      statusSub.textContent  = 'WhatsApp is active';
+      dot.className = 'wa-dot connected';
+      qrWrap.style.display  = 'none';
+      connectBtn.style.display = 'none';
+      disconnBtn.style.display = '';
       clearInterval(window._waPoller);
     } else {
-      statusText.textContent    = 'Disconnected';
-      dot.className             = 'wa-dot disconnected';
-      disconnBtn.style.display  = 'none';
-      if (data.pairing_code) {
-        statusSub.textContent             = 'Enter code in WhatsApp';
-        pairingWrap.style.display         = 'none';
-        pairingCodeWrap.style.display     = '';
-        document.getElementById('waPairingCode').textContent = data.pairing_code;
-        clearInterval(window._waPoller);
-        window._waPoller = setInterval(refreshWaStatus, 3000);
+      statusText.textContent = 'Disconnected';
+      statusSub.textContent  = data.has_qr ? 'Scan QR to connect' : 'Not connected';
+      dot.className = 'wa-dot disconnected';
+      connectBtn.style.display = '';
+      disconnBtn.style.display = 'none';
+      if (data.has_qr) {
+        fetchWaQr();
+        qrWrap.style.display = '';
       } else {
-        statusSub.textContent         = 'Enter your number to connect';
-        pairingWrap.style.display     = '';
-        pairingCodeWrap.style.display = 'none';
-        clearInterval(window._waPoller);
+        qrWrap.style.display = 'none';
       }
+      clearInterval(window._waPoller);
+      window._waPoller = setInterval(refreshWaStatus, 4000);
     }
   } catch(e) {
     statusText.textContent = 'Unavailable';
     statusSub.textContent  = 'Could not reach WhatsApp service';
-    dot.className          = 'wa-dot disconnected';
+    dot.className = 'wa-dot disconnected';
   }
 }
 
-async function waConnect() {
-  const btn = document.getElementById('waGetCodeBtn');
-  btn.disabled    = true;
-  btn.textContent = 'Getting code…';
-  document.getElementById('waStatusSub').textContent = 'Requesting pairing code…';
+async function fetchWaQr() {
   try {
-    const r = await fetch('/api/whatsapp/connect', {
+    const r = await fetch('/api/whatsapp/qr', { credentials: 'include' });
+    const data = await r.json();
+    if (data.qr) {
+      document.getElementById('waQrImg').src = data.qr;
+      document.getElementById('waQrWrap').style.display = '';
+    }
+  } catch(e) {}
+}
+
+async function waConnect() {
+  try {
+    document.getElementById('waStatusSub').textContent = 'Generating QR…';
+    document.getElementById('waConnectBtn').disabled = true;
+    await fetch('/api/whatsapp/connect', {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({})
     });
-    const data = await r.json();
-    if (data.pairing_code) {
-      document.getElementById('waPairingWrap').style.display     = 'none';
-      document.getElementById('waPairingCodeWrap').style.display = '';
-      document.getElementById('waPairingCode').textContent       = data.pairing_code;
-      document.getElementById('waStatusSub').textContent         = 'Enter code in WhatsApp';
-      startCodeTimer();
-      clearInterval(window._waPoller);
-      window._waPoller = setInterval(refreshWaStatus, 3000);
-    } else {
-      document.getElementById('waStatusSub').textContent = data.error || 'Failed to get code. Try again.';
-      btn.disabled    = false;
-      btn.textContent = 'Get Pairing Code';
-    }
+    clearInterval(window._waPoller);
+    window._waPoller = setInterval(refreshWaStatus, 3000);
+    setTimeout(refreshWaStatus, 2000);
   } catch(e) {
-    document.getElementById('waStatusSub').textContent = 'Could not reach server.';
-    btn.disabled    = false;
-    btn.textContent = 'Get Pairing Code';
+    document.getElementById('waStatusSub').textContent = 'Failed to start connection.';
+  } finally {
+    document.getElementById('waConnectBtn').disabled = false;
   }
-}
-
-async function waRegenCode() {
-  // Reset state and request a fresh pairing code
-  document.getElementById('waPairingCodeWrap').style.display = 'none';
-  document.getElementById('waPairingWrap').style.display     = '';
-  document.getElementById('waStatusSub').textContent         = 'Requesting new code…';
-  clearInterval(window._waPoller);
-  clearInterval(window._waTimer);
-  await waConnect();
-}
-
-let _waTimer = null;
-function startCodeTimer() {
-  let secs = 60;
-  clearInterval(window._waTimer);
-  const el = document.getElementById('waCodeTimer');
-  if (!el) return;
-  el.textContent = `Code expires in ${secs}s`;
-  window._waTimer = setInterval(() => {
-    secs--;
-    if (secs <= 0) {
-      clearInterval(window._waTimer);
-      el.textContent = 'Code expired — click Get New Code';
-      el.style.color = 'var(--red)';
-    } else {
-      el.textContent = `Code expires in ${secs}s`;
-      el.style.color = '';
-    }
-  }, 1000);
 }
 
 async function waDisconnect() {
