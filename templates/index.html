@@ -1147,6 +1147,8 @@
   <div id="waPairingCodeWrap" style="display:none;margin-top:16px;text-align:center;">
     <div class="wa-status-sub" style="margin-bottom:8px;">Enter this code in WhatsApp → Linked Devices → Link with phone number</div>
     <div id="waPairingCode" style="font-size:32px;font-weight:700;letter-spacing:6px;color:var(--white);background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;"></div>
+    <div class="wa-status-sub" style="margin-top:8px;" id="waCodeTimer"></div>
+    <button class="settings-action-btn" onclick="waRegenCode()" style="margin-top:10px;width:100%;">Get New Code</button>
   </div>
   <div style="display:flex;gap:8px;margin-top:12px;">
     <button class="settings-action-btn danger" id="waDisconnectBtn" onclick="waDisconnect()" style="display:none;">Disconnect</button>
@@ -1682,6 +1684,7 @@ async function waConnect() {
       document.getElementById('waPairingCodeWrap').style.display = '';
       document.getElementById('waPairingCode').textContent       = data.pairing_code;
       document.getElementById('waStatusSub').textContent         = 'Enter code in WhatsApp';
+      startCodeTimer();
       clearInterval(window._waPoller);
       window._waPoller = setInterval(refreshWaStatus, 3000);
     } else {
@@ -1694,6 +1697,36 @@ async function waConnect() {
     btn.disabled    = false;
     btn.textContent = 'Get Pairing Code';
   }
+}
+
+async function waRegenCode() {
+  // Reset state and request a fresh pairing code
+  document.getElementById('waPairingCodeWrap').style.display = 'none';
+  document.getElementById('waPairingWrap').style.display     = '';
+  document.getElementById('waStatusSub').textContent         = 'Requesting new code…';
+  clearInterval(window._waPoller);
+  clearInterval(window._waTimer);
+  await waConnect();
+}
+
+let _waTimer = null;
+function startCodeTimer() {
+  let secs = 60;
+  clearInterval(window._waTimer);
+  const el = document.getElementById('waCodeTimer');
+  if (!el) return;
+  el.textContent = `Code expires in ${secs}s`;
+  window._waTimer = setInterval(() => {
+    secs--;
+    if (secs <= 0) {
+      clearInterval(window._waTimer);
+      el.textContent = 'Code expired — click Get New Code';
+      el.style.color = 'var(--red)';
+    } else {
+      el.textContent = `Code expires in ${secs}s`;
+      el.style.color = '';
+    }
+  }, 1000);
 }
 
 async function waDisconnect() {
