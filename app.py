@@ -4,6 +4,7 @@ from datetime import date
 from collections import defaultdict
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from psycopg2 import pool
 import requests as http_requests
 from flask import send_from_directory
 import os
@@ -13,10 +14,21 @@ import bcrypt
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-# FIX 1: Never hardcode credentials — load from environment variables.
-# Set DATABASE_URL and WHATSAPP_SERVICE_URL in your Render / Heroku / local .env.
-DATABASE_URL         = os.environ["DATABASE_URL"]
+DATABASE_URL         = "postgresql://postgres.losiamfhydgdsojghcui:VaishnaviGiri@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
 WHATSAPP_SERVICE_URL = os.environ.get("WHATSAPP_SERVICE_URL", "http://localhost:3000")
+
+# Connection pool — reuses DB connections instead of opening a new one per request.
+# minconn=1 keeps one connection always alive, maxconn=10 allows up to 10 concurrent.
+# keepalives prevent stale connections from being dropped by Supabase after idle periods.
+db_pool = pool.ThreadedConnectionPool(
+    minconn=1,
+    maxconn=10,
+    dsn=DATABASE_URL,
+    keepalives=1,
+    keepalives_idle=30,
+    keepalives_interval=10,
+    keepalives_count=5
+)
 
 SESSION_COOKIE = "bb_session"
 
@@ -33,7 +45,10 @@ MONTH_NAMES = ['','January','February','March','April','May','June',
 # ──────────────────────────────────────────────────────────────
 
 def get_conn():
-    return psycopg2.connect(DATABASE_URL)
+    return db_pool.getconn()
+
+def put_conn(conn):
+    db_pool.putconn(conn)
 
 
 def next_belt(current):
@@ -75,7 +90,7 @@ def get_current_owner():
         conn.rollback()
         return None
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 def require_auth():
@@ -150,7 +165,7 @@ def login():
         conn.rollback()
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/auth/logout', methods=['POST'], strict_slashes=False)
@@ -165,7 +180,7 @@ def logout():
         except Exception:
             conn.rollback()
         finally:
-            cur.close(); conn.close()
+            cur.close(); put_conn(conn)
     resp = make_response(jsonify({"success": True}))
     resp.delete_cookie(SESSION_COOKIE)
     return resp
@@ -250,11 +265,26 @@ def wa_status():
 def wa_connect():
     owner, err = require_auth()
     if err: return err
+    # Read whatsapp_number from the owners table
+    conn = get_conn()
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT whatsapp_number FROM owners WHERE id = %s", (owner['id'],))
+        row = cur.fetchone()
+        phone_number = (row['whatsapp_number'] or '').strip() if row else ''
+    except Exception as e:
+        return jsonify({"error": f"DB error: {str(e)}"}), 500
+    finally:
+        cur.close(); put_conn(conn)
+
+    if not phone_number:
+        return jsonify({"error": "No WhatsApp number set for your account. Add whatsapp_number to the owners table in Supabase."}), 400
+
     try:
         resp = http_requests.post(
             f"{WHATSAPP_SERVICE_URL}/connect",
-            json={"owner_id": owner['id']},
-            timeout=10
+            json={"owner_id": owner['id'], "phone_number": phone_number},
+            timeout=15
         )
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
@@ -307,7 +337,7 @@ def get_dojos():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/dojos', methods=['POST'], strict_slashes=False)
@@ -332,7 +362,7 @@ def add_dojo():
         conn.rollback()
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/dojos/<int:dojo_id>', methods=['DELETE'], strict_slashes=False)
@@ -349,7 +379,7 @@ def delete_dojo(dojo_id):
         conn.rollback()
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -384,7 +414,7 @@ def get_batches():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/batches', methods=['POST'], strict_slashes=False)
@@ -418,7 +448,7 @@ def add_batch():
         conn.rollback()
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/batches/<int:batch_id>', methods=['DELETE'], strict_slashes=False)
@@ -443,7 +473,7 @@ def delete_batch(batch_id):
         conn.rollback()
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -504,7 +534,7 @@ def get_students():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/students/stats', strict_slashes=False)
@@ -538,7 +568,7 @@ def student_stats():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/students/<int:student_id>/profile', strict_slashes=False)
@@ -612,7 +642,7 @@ def student_profile(student_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/students', methods=['POST'], strict_slashes=False)
@@ -643,7 +673,7 @@ def add_student():
     except Exception as e:
         conn.rollback(); return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/students/<int:student_id>', methods=['PUT'], strict_slashes=False)
@@ -674,7 +704,7 @@ def update_student(student_id):
     except Exception as e:
         conn.rollback(); return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/students/<int:student_id>', methods=['DELETE'], strict_slashes=False)
@@ -696,7 +726,7 @@ def delete_student(student_id):
     except Exception as e:
         conn.rollback(); return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -734,7 +764,7 @@ def mark_attendance():
     except Exception as e:
         conn.rollback(); return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -816,7 +846,7 @@ def no_absences():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -866,7 +896,7 @@ def get_report():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -902,7 +932,7 @@ def get_fees():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/fees', methods=['POST'], strict_slashes=False)
@@ -934,7 +964,7 @@ def update_fee():
     except Exception as e:
         conn.rollback(); return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1000,7 +1030,7 @@ def belt_test_students():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 @app.route('/api/belt-test/promote', methods=['POST'], strict_slashes=False)
@@ -1040,7 +1070,7 @@ def belt_test_promote():
     except Exception as e:
         conn.rollback(); return jsonify({"error": str(e)}), 500
     finally:
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1058,7 +1088,7 @@ def test():
         conn = get_conn()
         cur  = conn.cursor()
         cur.execute("SELECT 1")
-        cur.close(); conn.close()
+        cur.close(); put_conn(conn)
         return "DB OK"
     except Exception as e:
         return str(e), 500
