@@ -246,6 +246,21 @@ def wa_status():
         return jsonify({"connected": False, "error": str(e)}), 503
 
 
+@app.route('/api/whatsapp/connect', methods=['POST'], strict_slashes=False)
+def wa_connect():
+    owner, err = require_auth()
+    if err: return err
+    try:
+        resp = http_requests.post(
+            f"{WHATSAPP_SERVICE_URL}/connect",
+            json={"owner_id": owner['id']},
+            timeout=10
+        )
+        return jsonify(resp.json()), resp.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 503
+
+
 @app.route('/api/whatsapp/qr', strict_slashes=False)
 def wa_qr():
     owner, err = require_auth()
