@@ -51,6 +51,67 @@
       color: var(--text);
     }
 
+    /* ─── SETTINGS PANEL ────────────────── */
+    .settings-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; padding: 4px; line-height:1;
+      opacity: 0.8; transition: opacity .2s;
+    }
+    .settings-btn:hover { opacity: 1; }
+    #settings-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 1000;
+    }
+    #settings-overlay.active { display: block; }
+    #settings-panel {
+      position: fixed; top: 0; right: -340px; width: 320px;
+      height: 100%; background: var(--surface);
+      border-left: 1px solid var(--border);
+      z-index: 1001; padding: 24px 20px;
+      transition: right .25s ease; overflow-y: auto;
+    }
+    #settings-panel.active { right: 0; }
+    .settings-header {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 24px;
+    }
+    .settings-title {
+      font-family: 'Oswald', sans-serif; font-size: 20px;
+      font-weight: 600; letter-spacing: 1px; color: var(--white);
+    }
+    .settings-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 18px; cursor: pointer; padding: 4px;
+    }
+    .settings-section-label {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+    }
+    .wa-status-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 14px;
+    }
+    .wa-status-text { font-weight: 500; font-size: 15px; color: var(--text); }
+    .wa-status-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .wa-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--muted2); flex-shrink: 0;
+      transition: background .3s;
+    }
+    .wa-dot.connected { background: var(--green); box-shadow: 0 0 8px rgba(46,204,113,0.5); }
+    .wa-dot.disconnected { background: var(--red); }
+    .settings-action-btn {
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); border-radius: var(--r);
+      padding: 10px 16px; font-size: 14px; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: border-color .2s;
+    }
+    .settings-action-btn:hover { border-color: var(--border2); }
+    .settings-action-btn.danger { border-color: var(--red-dim); color: var(--red); }
+    .settings-action-btn.danger:hover { background: var(--red-soft); }
+
     /* ─── LOGIN SCREEN ───────────────────── */
     #login-screen {
       display: none;
@@ -1060,7 +1121,38 @@
   <div class="topbar-right">
     <button class="back-btn" id="backBtn" onclick="goBack()">← Back</button>
     <div class="page-label" id="topPageLabel">Attendance</div>
+    <button class="settings-btn" id="settingsBtn" onclick="openSettings()" title="Settings">⚙️</button>
   </div>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div id="settings-overlay" onclick="closeSettings()"></div>
+<div id="settings-panel">
+  <div class="settings-header">
+    <div class="settings-title">Settings</div>
+    <button class="settings-close" onclick="closeSettings()">✕</button>
+  </div>
+
+  <div class="settings-section-label">WhatsApp</div>
+  <div class="wa-status-row">
+    <div>
+      <div class="wa-status-text" id="waStatusText">Checking…</div>
+      <div class="wa-status-sub" id="waStatusSub"></div>
+    </div>
+    <div class="wa-dot" id="waDot"></div>
+  </div>
+  <div id="waQrWrap" style="display:none;text-align:center;margin:16px 0;">
+    <div class="wa-status-sub" style="margin-bottom:10px;">Scan this QR code with WhatsApp on your phone</div>
+    <img id="waQrImg" src="" style="width:200px;height:200px;border-radius:8px;border:2px solid var(--border);"/>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px;">
+    <button class="settings-action-btn" id="waConnectBtn" onclick="waConnect()" style="display:none;">Connect WhatsApp</button>
+    <button class="settings-action-btn danger" id="waDisconnectBtn" onclick="waDisconnect()" style="display:none;">Disconnect</button>
+  </div>
+
+  <div class="settings-section-label" style="margin-top:24px;">Account</div>
+  <div class="wa-status-sub" id="settingsOwnerName"></div>
+  <button class="settings-action-btn danger" onclick="doLogout()" style="margin-top:10px;">Log Out</button>
 </div>
 
 <div class="scroll-area" id="scrollArea">
@@ -1507,6 +1599,108 @@ function initApp() {
   document.getElementById('dateInput').valueAsDate = new Date();
   document.getElementById('rDate').valueAsDate     = new Date();
   loadDojos();
+}
+
+// ── SETTINGS PANEL ──────────────────────────────────
+function openSettings() {
+  document.getElementById('settings-overlay').classList.add('active');
+  document.getElementById('settings-panel').classList.add('active');
+  if (currentOwner) {
+    document.getElementById('settingsOwnerName').textContent = currentOwner.name + ' (@' + currentOwner.username + ')';
+  }
+  refreshWaStatus();
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('active');
+  document.getElementById('settings-panel').classList.remove('active');
+  clearInterval(window._waPoller);
+}
+
+// ── WHATSAPP ─────────────────────────────────────────
+let _waPoller = null;
+
+async function refreshWaStatus() {
+  const statusText = document.getElementById('waStatusText');
+  const statusSub  = document.getElementById('waStatusSub');
+  const dot        = document.getElementById('waDot');
+  const qrWrap     = document.getElementById('waQrWrap');
+  const connectBtn = document.getElementById('waConnectBtn');
+  const disconnBtn = document.getElementById('waDisconnectBtn');
+  try {
+    const r = await fetch('/api/whatsapp/status', { credentials: 'include' });
+    const data = await r.json();
+    if (data.connected) {
+      statusText.textContent = 'Connected';
+      statusSub.textContent  = 'WhatsApp is active';
+      dot.className = 'wa-dot connected';
+      qrWrap.style.display  = 'none';
+      connectBtn.style.display = 'none';
+      disconnBtn.style.display = '';
+      clearInterval(window._waPoller);
+    } else {
+      statusText.textContent = 'Disconnected';
+      statusSub.textContent  = data.has_qr ? 'Scan QR to connect' : 'Not connected';
+      dot.className = 'wa-dot disconnected';
+      connectBtn.style.display = '';
+      disconnBtn.style.display = 'none';
+      if (data.has_qr) {
+        fetchWaQr();
+        qrWrap.style.display = '';
+      } else {
+        qrWrap.style.display = 'none';
+      }
+      clearInterval(window._waPoller);
+      window._waPoller = setInterval(refreshWaStatus, 4000);
+    }
+  } catch(e) {
+    statusText.textContent = 'Unavailable';
+    statusSub.textContent  = 'Could not reach WhatsApp service';
+    dot.className = 'wa-dot disconnected';
+  }
+}
+
+async function fetchWaQr() {
+  try {
+    const r = await fetch('/api/whatsapp/qr', { credentials: 'include' });
+    const data = await r.json();
+    if (data.qr) {
+      document.getElementById('waQrImg').src = data.qr;
+      document.getElementById('waQrWrap').style.display = '';
+    }
+  } catch(e) {}
+}
+
+async function waConnect() {
+  try {
+    await fetch('/api/whatsapp/qr', { credentials: 'include' });
+    document.getElementById('waStatusSub').textContent = 'Generating QR…';
+    clearInterval(window._waPoller);
+    window._waPoller = setInterval(refreshWaStatus, 3000);
+    refreshWaStatus();
+  } catch(e) {}
+}
+
+async function waDisconnect() {
+  if (!confirm('Disconnect WhatsApp? You will need to scan QR again to reconnect.')) return;
+  try {
+    await fetch('/api/whatsapp/logout', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    refreshWaStatus();
+  } catch(e) {}
+}
+
+// ── LOGOUT ───────────────────────────────────────────
+async function doLogout() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch(e) {}
+  currentOwner = null;
+  closeSettings();
+  showLoginScreen();
 }
 
 checkAuth();
