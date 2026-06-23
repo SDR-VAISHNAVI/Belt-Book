@@ -250,26 +250,11 @@ def wa_status():
 def wa_connect():
     owner, err = require_auth()
     if err: return err
-    # Read whatsapp_number from the owners table
-    conn = get_conn()
-    try:
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT whatsapp_number FROM owners WHERE id = %s", (owner['id'],))
-        row = cur.fetchone()
-        phone_number = (row['whatsapp_number'] or '').strip() if row else ''
-    except Exception as e:
-        return jsonify({"error": f"DB error: {str(e)}"}), 500
-    finally:
-        cur.close(); conn.close()
-
-    if not phone_number:
-        return jsonify({"error": "No WhatsApp number set for your account. Add whatsapp_number to the owners table in Supabase."}), 400
-
     try:
         resp = http_requests.post(
             f"{WHATSAPP_SERVICE_URL}/connect",
-            json={"owner_id": owner['id'], "phone_number": phone_number},
-            timeout=15
+            json={"owner_id": owner['id']},
+            timeout=10
         )
         return jsonify(resp.json()), resp.status_code
     except Exception as e:
