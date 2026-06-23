@@ -1673,12 +1673,21 @@ async function fetchWaQr() {
 
 async function waConnect() {
   try {
-    await fetch('/api/whatsapp/qr', { credentials: 'include' });
     document.getElementById('waStatusSub').textContent = 'Generating QR…';
+    document.getElementById('waConnectBtn').disabled = true;
+    await fetch('/api/whatsapp/connect', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
     clearInterval(window._waPoller);
     window._waPoller = setInterval(refreshWaStatus, 3000);
-    refreshWaStatus();
-  } catch(e) {}
+    setTimeout(refreshWaStatus, 2000);
+  } catch(e) {
+    document.getElementById('waStatusSub').textContent = 'Failed to start connection.';
+  } finally {
+    document.getElementById('waConnectBtn').disabled = false;
+  }
 }
 
 async function waDisconnect() {
